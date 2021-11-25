@@ -77,6 +77,7 @@ func abundanceToFlatNodes(abnd map[string]float64, tree *newick.Node,
 	return sum
 }
 
+// Sorts and divides abundances by their sum.
 func normalizeFlatNodes(nodes []flatNode) {
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].id < nodes[j].id

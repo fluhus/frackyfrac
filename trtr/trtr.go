@@ -14,6 +14,7 @@ import (
 	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/gzipf"
+	"github.com/fluhus/gostuff/maps"
 )
 
 var (
@@ -24,8 +25,6 @@ var (
 )
 
 func main() {
-	// ezpprof.Start("/tmp/amitmit/profile")
-	// defer ezpprof.Stop()
 	common.ExitIfError(parseArgs())
 
 	files := expandFiles()
@@ -34,7 +33,7 @@ func main() {
 	}
 	fmt.Fprintln(os.Stderr, "Sketching", len(files), "files")
 
-	tmp, err := os.MkdirTemp("", "frcfrc_")
+	tmp, err := os.MkdirTemp("", "trtr_")
 	common.ExitIfError(err)
 	if !*keep {
 		defer os.RemoveAll(tmp)
@@ -68,6 +67,7 @@ func main() {
 	}
 }
 
+// Parses and checks arguments.
 func parseArgs() error {
 	if len(os.Args) == 1 {
 		usage()
@@ -83,15 +83,19 @@ func parseArgs() error {
 	return nil
 }
 
+// Expands the given glob patterns to files, removing repetitions.
 func expandFiles() []string {
-	var result []string
-	for _, file := range flag.Args() {
-		exp, _ := filepath.Glob(file)
-		result = append(result, exp...)
+	result := map[string]struct{}{}
+	for _, pat := range flag.Args() {
+		files, _ := filepath.Glob(pat)
+		for _, file := range files {
+			result[file] = struct{}{}
+		}
 	}
-	return result
+	return maps.Keys(result).([]string)
 }
 
+// Calls f for each canonical kmer in the given reader.
 func iterKmers(r *gzipf.Reader, k int, f func([]byte)) error {
 	fqr := fasta.NewReader(r)
 	var err error
@@ -116,12 +120,14 @@ func iterKmers(r *gzipf.Reader, k int, f func([]byte)) error {
 	return nil
 }
 
+// A convenience function for hashing strings.
 func strhash(x string) string {
 	h := md5.New()
 	h.Write([]byte(x))
 	return base32.StdEncoding.EncodeToString(h.Sum(nil))[:20]
 }
 
+// Returns the basenames of the given files.
 func baseNames(files []string) []string {
 	result := make([]string, len(files))
 	for i, f := range files {

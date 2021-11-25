@@ -20,9 +20,6 @@ var (
 )
 
 func main() {
-	// ezpprof.Start("/tmp/amitmit/profile")
-	// defer ezpprof.Stop()
-
 	common.ExitIfError(parseArgs())
 	t := time.Now()
 
@@ -30,13 +27,11 @@ func main() {
 	tree, err := readTree()
 	common.ExitIfError(err)
 
-	// ezpprof.Start("/tmp/amitmit/profile")
 	fmt.Fprintln(os.Stderr, "Loading abundances")
 	r, err := openInput()
 	common.ExitIfError(err)
 	abnd, err := parseAbundance(r)
 	common.ExitIfError(err)
-	// ezpprof.Stop()
 
 	fmt.Fprintln(os.Stderr, "Validating")
 	common.ExitIfError(validateSpecies(abnd, tree))

@@ -9,6 +9,7 @@ import (
 	"github.com/fluhus/gostuff/clustering"
 )
 
+// Returns the Jaccard dissimilarity between 2 sketches.
 func dist(a, b []uint64) float64 {
 	i, j := 0, 0
 	common := 0
@@ -28,6 +29,7 @@ func dist(a, b []uint64) float64 {
 	return 1 - float64(common)/float64(len(a)+len(b)-common)
 }
 
+// Returns the entropy of dividing the given distances to buckets.
 func entropy(x []float64, buckets int) float64 {
 	counts := map[int]int{}
 	fbuckets := float64(buckets)
@@ -45,16 +47,19 @@ func entropy(x []float64, buckets int) float64 {
 	return result
 }
 
+// Integer square-root.
 func isqrt(i int) int {
 	return int(math.Round(math.Sqrt(float64(i))))
 }
 
+// A tree node with depth instead of length.
 type deepNode struct {
 	name     string
 	depth    float64
 	children []*deepNode
 }
 
+// Creates a tree from the given sketches with names as the leaf names.
 func makeTree(sketches [][]uint64, names []string) *newick.Node {
 	if len(sketches) != len(names) {
 		panic(fmt.Sprintf("mismatching lengths: %d, %d",
@@ -83,6 +88,7 @@ func makeTree(sketches [][]uint64, names []string) *newick.Node {
 	return nodes[len(nodes)-1].toNewickNode()
 }
 
+// Converts a node with depth to a node with distance.
 func (n *deepNode) toNewickNode() *newick.Node {
 	node := &newick.Node{
 		Name:     n.name,
