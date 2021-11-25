@@ -20,7 +20,7 @@ import (
 var (
 	k    = flag.Uint("k", 0, "K-mer length, required")
 	n    = flag.Uint("n", 10000, "Sketch length")
-	fout = flag.String("o", "", "Path to output file (default: stdout)")
+	fout = flag.String("o", "", "Path to output file (default stdout)")
 	keep = flag.Bool("keep-temp", false, "Do not remove temporary files")
 )
 

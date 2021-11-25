@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	fin   = flag.String("i", "", "Path to input file (default: stdin)")
-	fout  = flag.String("o", "", "Path to output file (default: stdout)")
+	fin   = flag.String("i", "", "Path to input file (default stdin)")
+	fout  = flag.String("o", "", "Path to output file (default stdout)")
 	ftree = flag.String("t", "", "Path to tree file, required")
-	wgt   = flag.Bool("w", false, "Use weighted UniFrac (default: unweighted)")
+	wgt   = flag.Bool("w", false, "Use weighted UniFrac (default unweighted)")
 )
 
 func main() {
