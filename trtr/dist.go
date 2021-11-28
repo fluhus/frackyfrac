@@ -65,12 +65,15 @@ func makeTree(sketches [][]uint64, names []string) *newick.Node {
 		panic(fmt.Sprintf("mismatching lengths: %d, %d",
 			len(sketches), len(names)))
 	}
+	var distances []float64 // Collects distances for entropy.
 	hcl := clustering.Agglo(len(sketches), clustering.AggloMax,
 		func(i, j int) float64 {
-			return dist(sketches[i], sketches[j])
+			d := dist(sketches[i], sketches[j])
+			distances = append(distances, d)
+			return d
 		})
+	fmt.Fprintln(os.Stderr, "Entropy:", entropy(distances, isqrt(len(distances))))
 	var nodes []*deepNode
-	var distances []float64
 	for _, name := range names {
 		nodes = append(nodes, &deepNode{name: name})
 	}
@@ -82,9 +85,7 @@ func makeTree(sketches [][]uint64, names []string) *newick.Node {
 		// depth.
 		parent := &deepNode{children: []*deepNode{node1, node2}, depth: depth}
 		nodes[step.C2] = parent
-		distances = append(distances, step.D)
 	}
-	fmt.Fprintln(os.Stderr, "Entropy:", entropy(distances, isqrt(len(distances))))
 	return nodes[len(nodes)-1].toNewickNode()
 }
 
