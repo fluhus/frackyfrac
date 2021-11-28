@@ -2,6 +2,10 @@
 
 Make UniFrac accessible to everyone.
 
+## Download
+
+See [releases][rls].
+
 ## System Requirements
 
 None.
