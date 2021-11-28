@@ -14,7 +14,7 @@ to add it.
 
 ## Usage
 
-Creating a tree:
+Creating a tree (optional):
 
 ```
 trtr -k 10 -o my_genomes.tree species_1.fa species_2.fa species_3.fa
