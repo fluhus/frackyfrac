@@ -19,7 +19,7 @@ const divideByUnion = true
 // species and values are abundances.
 func parseAbundance(r io.Reader) ([]map[string]float64, error) {
 	sc := bufio.NewScanner(r)
-	sc.Buffer(nil, 1<<20)
+	sc.Buffer(nil, 1<<25)
 	re := regexp.MustCompile(`\S+`)
 	var names []string
 	var result []map[string]float64
@@ -58,6 +58,63 @@ func parseAbundance(r io.Reader) ([]map[string]float64, error) {
 		return nil, sc.Err()
 	}
 	return result, nil
+}
+
+// Parses the input sparse abundance table. Returns a map for each row where
+// keys are species and values are abundances.
+func parseAbundanceSparse(r io.Reader) ([]map[string]float64, error) {
+	sc := bufio.NewScanner(r)
+	sc.Buffer(nil, 1<<25)
+	re := regexp.MustCompile(`\S+`)
+	var result []map[string]float64
+	for sc.Scan() {
+		parts := re.FindAllString(sc.Text(), -1)
+		m := map[string]float64{}
+		for i := range parts {
+			species, val, err := splitSparse(parts[i])
+			if err != nil {
+				return nil, fmt.Errorf("row #%d value #%d: %v",
+					len(result)+1, i+1, err)
+			}
+			if species == "" {
+				return nil, fmt.Errorf("row #%d value #%d: empty species name",
+					len(result)+1, i+1)
+			}
+			f, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return nil, fmt.Errorf("row #%d value #%d: %v",
+					len(result)+1, i+1, err)
+			}
+			if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
+				return nil, fmt.Errorf("row #%d value #%d: bad value: %f",
+					len(result)+1, i+1, f)
+			}
+			if f == 0 {
+				return nil, fmt.Errorf("row #%d value #%d: "+
+					"zeros are not allowed in sparse format",
+					len(result)+1, i+1)
+			}
+			m[species] = f
+		}
+		result = append(result, m)
+	}
+	if sc.Err() != nil {
+		return nil, sc.Err()
+	}
+	return result, nil
+}
+
+func splitSparse(s string) (string, string, error) {
+	last := -1
+	for i, c := range s {
+		if c == ':' {
+			last = i
+		}
+	}
+	if last == -1 {
+		return "", "", fmt.Errorf("no colon in %q", s)
+	}
+	return s[:last], s[last+1:], nil
 }
 
 // Converts an abundance map to a list of flat nodes. Returns the sum of

@@ -13,16 +13,17 @@ import (
 )
 
 var (
-	fin   = flag.String("i", "", "Path to input file (default stdin)")
-	fout  = flag.String("o", "", "Path to output file (default stdout)")
-	ftree = flag.String("t", "", "Path to tree file, required")
-	wgt   = flag.Bool("w", false, "Use weighted UniFrac (default unweighted)")
+	fin    = flag.String("i", "", "Path to input file (default stdin)")
+	fout   = flag.String("o", "", "Path to output file (default stdout)")
+	ftree  = flag.String("t", "", "Path to tree file, required")
+	wgt    = flag.Bool("w", false, "Use weighted UniFrac (default unweighted)")
+	sparse = flag.Bool("s", false, "Input is in sparse format")
 )
 
 func main() {
 	common.ExitIfError(parseArgs())
-	t := time.Now()
 
+	t := time.Now()
 	fmt.Fprintln(os.Stderr, "Reading tree")
 	tree, err := readTree()
 	common.ExitIfError(err)
@@ -30,7 +31,12 @@ func main() {
 	fmt.Fprintln(os.Stderr, "Loading abundances")
 	r, err := openInput()
 	common.ExitIfError(err)
-	abnd, err := parseAbundance(r)
+	var abnd []map[string]float64
+	if *sparse {
+		abnd, err = parseAbundanceSparse(r)
+	} else {
+		abnd, err = parseAbundance(r)
+	}
 	common.ExitIfError(err)
 
 	fmt.Fprintln(os.Stderr, "Validating")
