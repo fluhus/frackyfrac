@@ -33,7 +33,7 @@ func main() {
 	}
 	fmt.Fprintln(os.Stderr, "Sketching", len(files), "files")
 
-	tmp, err := os.MkdirTemp("", "trtr_")
+	tmp, err := os.MkdirTemp("", "trtr-")
 	common.ExitIfError(err)
 	if !*keep {
 		defer os.RemoveAll(tmp)
