@@ -10,47 +10,34 @@ import (
 	"strconv"
 
 	"github.com/fluhus/biostuff/formats/newick"
+	"github.com/fluhus/frackyfrac/ppln"
 )
 
 // TODO(amit): Clean this up.
 const divideByUnion = true
+
+// Splits input rows into individual values.
+var splitter = regexp.MustCompile(`\S+`)
 
 // Parses the input abundance table. Returns a map for each row where keys are
 // species and values are abundances.
 func parseAbundance(r io.Reader) ([]map[string]float64, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, 1<<25)
-	re := regexp.MustCompile(`\S+`)
 	var names []string
 	var result []map[string]float64
 	for sc.Scan() {
-		parts := re.FindAllString(sc.Text(), -1)
 		if names == nil {
+			parts := splitter.FindAllString(sc.Text(), -1)
 			if len(parts) == 0 {
 				return nil, fmt.Errorf("row #1 has 0 values")
 			}
 			names = parts
 			continue
 		}
-		if len(parts) != len(names) {
-			return nil, fmt.Errorf("row #%d has %d values, expected %d",
-				len(result)+2, len(parts), len(names))
-		}
-		m := map[string]float64{}
-		for i := range parts {
-			f, err := strconv.ParseFloat(parts[i], 64)
-			if err != nil {
-				return nil, fmt.Errorf("row #%d value #%d: %v",
-					len(result)+2, i+1, err)
-			}
-			if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
-				return nil, fmt.Errorf("row #%d value #%d: bad value: %f",
-					len(result)+2, i+1, f)
-			}
-			if f == 0 {
-				continue
-			}
-			m[names[i]] = f
+		m, err := parseRow(sc.Text(), names)
+		if err != nil {
+			return nil, fmt.Errorf("row #%d: %v", len(result)+2, err)
 		}
 		result = append(result, m)
 	}
@@ -60,48 +47,91 @@ func parseAbundance(r io.Reader) ([]map[string]float64, error) {
 	return result, nil
 }
 
+func parseRow(row string, names []string) (map[string]float64, error) {
+	parts := splitter.FindAllString(row, -1)
+	if len(parts) != len(names) {
+		return nil, fmt.Errorf("has %d values, expected %d",
+			len(parts), len(names))
+	}
+	m := map[string]float64{}
+	for i := range parts {
+		f, err := strconv.ParseFloat(parts[i], 64)
+		if err != nil {
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
+		}
+		if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
+			return nil, fmt.Errorf("value #%d: bad value: %f", i+1, f)
+		}
+		if f == 0 {
+			continue
+		}
+		m[names[i]] = f
+	}
+	return m, nil
+}
+
 // Parses the input sparse abundance table. Returns a map for each row where
 // keys are species and values are abundances.
-func parseAbundanceSparse(r io.Reader) ([]map[string]float64, error) {
+func parseSparseAbundance(r io.Reader) ([]map[string]float64, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, 1<<25)
-	re := regexp.MustCompile(`\S+`)
 	var result []map[string]float64
-	for sc.Scan() {
-		parts := re.FindAllString(sc.Text(), -1)
-		m := map[string]float64{}
-		for i := range parts {
-			species, val, err := splitSparse(parts[i])
-			if err != nil {
-				return nil, fmt.Errorf("row #%d value #%d: %v",
-					len(result)+1, i+1, err)
+	type bla struct {
+		m   map[string]float64
+		err error
+	}
+	var err error
+	ppln.Serial(*nt,
+		func(c chan<- interface{}) {
+			for sc.Scan() {
+				c <- sc.Text()
 			}
-			if species == "" {
-				return nil, fmt.Errorf("row #%d value #%d: empty species name",
-					len(result)+1, i+1)
+		},
+		func(a interface{}) interface{} {
+			m, err := parseSparseRow(a.(string))
+			return bla{m, err}
+		},
+		func(a interface{}) {
+			aa := a.(bla)
+			if aa.err != nil {
+				err = aa.err
 			}
-			f, err := strconv.ParseFloat(val, 64)
-			if err != nil {
-				return nil, fmt.Errorf("row #%d value #%d: %v",
-					len(result)+1, i+1, err)
-			}
-			if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
-				return nil, fmt.Errorf("row #%d value #%d: bad value: %f",
-					len(result)+1, i+1, f)
-			}
-			if f == 0 {
-				return nil, fmt.Errorf("row #%d value #%d: "+
-					"zeros are not allowed in sparse format",
-					len(result)+1, i+1)
-			}
-			m[species] = f
-		}
-		result = append(result, m)
+			result = append(result, aa.m)
+		})
+	if err != nil {
+		return nil, err
 	}
 	if sc.Err() != nil {
 		return nil, sc.Err()
 	}
 	return result, nil
+}
+
+func parseSparseRow(row string) (map[string]float64, error) {
+	parts := splitter.FindAllString(row, -1)
+	m := map[string]float64{}
+	for i := range parts {
+		species, val, err := splitSparse(parts[i])
+		if err != nil {
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
+		}
+		if species == "" {
+			return nil, fmt.Errorf("value #%d: empty species name", i+1)
+		}
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
+		}
+		if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
+			return nil, fmt.Errorf("value #%d: bad value: %f", i+1, f)
+		}
+		if f == 0 {
+			return nil, fmt.Errorf("value #%d: "+
+				"zeros are not allowed in sparse format", i+1)
+		}
+		m[species] = f
+	}
+	return m, nil
 }
 
 func splitSparse(s string) (string, string, error) {
@@ -189,12 +219,21 @@ func validateSpecies(abnd []map[string]float64, tree *newick.Node) error {
 // order.
 func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 ) []float64 {
-	sets := make([][]flatNode, len(abnd))
+	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
-	for i, a := range abnd {
-		abundanceToFlatNodes(a, tree, enum, &sets[i])
-		normalizeFlatNodes(sets[i])
-	}
+	ppln.Serial(*nt,
+		func(c chan<- interface{}) {
+			for i := range abnd {
+				c <- i
+			}
+		}, func(a interface{}) interface{} {
+			var set []flatNode
+			abundanceToFlatNodes(abnd[a.(int)], tree, enum, &set)
+			normalizeFlatNodes(set)
+			return set
+		}, func(a interface{}) {
+			sets = append(sets, a.([]flatNode))
+		})
 	return unifracDists(sets, tree, weighted)
 }
 
@@ -298,15 +337,30 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 	if !divideByUnion {
 		sum = treeSum(tree)
 	}
-	var result []float64
-	for i, a := range x {
-		for _, b := range x[i+1:] {
-			if weighted {
-				result = append(result, unifracDistWeighted(a, b))
-			} else {
-				result = append(result, unifracDistUnweighted(a, b)/sum)
-			}
-		}
+
+	type task struct {
+		a, b []flatNode
 	}
+	result := make([]float64, 0, len(x)*(len(x)-1)/2)
+
+	ppln.Serial(*nt,
+		func(push chan<- interface{}) {
+			for i, a := range x {
+				for _, b := range x[i+1:] {
+					push <- task{a, b}
+				}
+			}
+		},
+		func(a interface{}) interface{} {
+			aa := a.(task)
+			if weighted {
+				return unifracDistWeighted(aa.a, aa.b)
+			} else {
+				return unifracDistUnweighted(aa.a, aa.b) / sum
+			}
+		}, func(a interface{}) {
+			result = append(result, a.(float64))
+		})
+
 	return result
 }

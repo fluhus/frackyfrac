@@ -31,7 +31,7 @@ func TestParseAbundanceSparse(t *testing.T) {
 		{},
 		{"d": 1, "c": 4, "a": 10},
 	}
-	got, err := parseAbundanceSparse(strings.NewReader(input))
+	got, err := parseSparseAbundance(strings.NewReader(input))
 	if err != nil {
 		t.Fatalf("parseAbundanceSparse(%q) failed: %v", input, err)
 	}

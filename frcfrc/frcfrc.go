@@ -18,6 +18,7 @@ var (
 	ftree  = flag.String("t", "", "Path to tree file, required")
 	wgt    = flag.Bool("w", false, "Use weighted UniFrac (default unweighted)")
 	sparse = flag.Bool("s", false, "Input is in sparse format")
+	nt     = flag.Int("p", 1, "Number of threads")
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 	common.ExitIfError(err)
 	var abnd []map[string]float64
 	if *sparse {
-		abnd, err = parseAbundanceSparse(r)
+		abnd, err = parseSparseAbundance(r)
 	} else {
 		abnd, err = parseAbundance(r)
 	}
@@ -65,6 +66,9 @@ func parseArgs() error {
 	flag.Parse()
 	if *ftree == "" {
 		return fmt.Errorf("please provide a tree file with -t")
+	}
+	if *nt < 1 {
+		return fmt.Errorf("bad number of threads: %d", *nt)
 	}
 	return nil
 }
