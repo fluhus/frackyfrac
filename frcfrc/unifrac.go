@@ -346,7 +346,7 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 	ppln.Serial(*nt,
 		func(push chan<- interface{}) {
 			for i, a := range x {
-				for _, b := range x[i+1:] {
+				for _, b := range x[:i] {
 					push <- task{a, b}
 				}
 			}
