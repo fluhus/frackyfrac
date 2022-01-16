@@ -1,3 +1,4 @@
+// Command trtr creates phylogenetic trees from fasta files.
 package main
 
 import (

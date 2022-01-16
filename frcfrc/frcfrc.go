@@ -1,3 +1,4 @@
+// Command frcfrc calculates UniFrac distances on input samples.
 package main
 
 import (
