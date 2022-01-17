@@ -12,15 +12,15 @@ func TestSerial(t *testing.T) {
 		t.Run(fmt.Sprint(nt), func(t *testing.T) {
 			n := nt * 100
 			var result []int
-			Serial(nt, func(c chan<- interface{}) {
+			Serial(nt, func(c chan<- interface{}, s Stopper) {
 				for i := 0; i < n; i++ {
 					time.Sleep(time.Millisecond * time.Duration(rand.Intn(5)))
 					c <- i
 				}
-			}, func(i interface{}) interface{} {
+			}, func(i interface{}, s Stopper) interface{} {
 				ii := i.(int)
 				return ii * ii
-			}, func(i interface{}) {
+			}, func(i interface{}, s Stopper) {
 				result = append(result, i.(int))
 			})
 			for i := range result {

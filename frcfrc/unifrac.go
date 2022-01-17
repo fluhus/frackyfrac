@@ -76,24 +76,34 @@ func parseSparseAbundance(r io.Reader) ([]map[string]float64, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, 1<<25)
 	var result []map[string]float64
-	type bla struct {
+	type rowResult struct {
 		m   map[string]float64
 		err error
 	}
 	var err error
 	ppln.Serial(*nt,
-		func(c chan<- interface{}) {
+		func(c chan<- interface{}, s ppln.Stopper) {
 			for sc.Scan() {
+				if s.Stopped() {
+					break
+				}
 				c <- sc.Text()
 			}
 		},
-		func(a interface{}) interface{} {
+		func(a interface{}, s ppln.Stopper) interface{} {
+			if s.Stopped() {
+				return rowResult{}
+			}
 			m, err := parseSparseRow(a.(string))
-			return bla{m, err}
+			return rowResult{m, err}
 		},
-		func(a interface{}) {
-			aa := a.(bla)
-			if aa.err != nil {
+		func(a interface{}, s ppln.Stopper) {
+			if s.Stopped() {
+				return
+			}
+			aa := a.(rowResult)
+			if aa.err != nil && err == nil { // Take first error.
+				s.Stop()
 				err = aa.err
 			}
 			result = append(result, aa.m)
@@ -222,16 +232,16 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	ppln.Serial(*nt,
-		func(c chan<- interface{}) {
+		func(c chan<- interface{}, s ppln.Stopper) {
 			for i := range abnd {
 				c <- i
 			}
-		}, func(a interface{}) interface{} {
+		}, func(a interface{}, s ppln.Stopper) interface{} {
 			var set []flatNode
 			abundanceToFlatNodes(abnd[a.(int)], tree, enum, &set)
 			normalizeFlatNodes(set)
 			return set
-		}, func(a interface{}) {
+		}, func(a interface{}, s ppln.Stopper) {
 			sets = append(sets, a.([]flatNode))
 		})
 	return unifracDists(sets, tree, weighted)
@@ -344,21 +354,21 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 	result := make([]float64, 0, len(x)*(len(x)-1)/2)
 
 	ppln.Serial(*nt,
-		func(push chan<- interface{}) {
+		func(push chan<- interface{}, s ppln.Stopper) {
 			for i, a := range x {
 				for _, b := range x[:i] {
 					push <- task{a, b}
 				}
 			}
 		},
-		func(a interface{}) interface{} {
+		func(a interface{}, s ppln.Stopper) interface{} {
 			aa := a.(task)
 			if weighted {
 				return unifracDistWeighted(aa.a, aa.b)
 			} else {
 				return unifracDistUnweighted(aa.a, aa.b) / sum
 			}
-		}, func(a interface{}) {
+		}, func(a interface{}, s ppln.Stopper) {
 			result = append(result, a.(float64))
 		})
 

@@ -21,22 +21,24 @@ const (
 //
 // Puller will be called on the results by the same order of pusher's input.
 func Serial(ngoroutines int,
-	pusher func(chan<- interface{}),
-	mapper func(interface{}) interface{},
-	puller func(interface{})) {
+	pusher func(chan<- interface{}, Stopper),
+	mapper func(interface{}, Stopper) interface{},
+	puller func(interface{}, Stopper)) {
 	if ngoroutines < 1 {
 		panic(fmt.Sprintf("bad number of goroutines: %d", ngoroutines))
 	}
+
+	stopper := newStopper()
 
 	// An optimization for a single thread.
 	if ngoroutines == 1 {
 		push := make(chan interface{}, ngoroutines*chanLenCoef)
 		go func() {
-			pusher(push)
+			pusher(push, stopper)
 			close(push)
 		}()
 		for data := range push {
-			puller(mapper(data))
+			puller(mapper(data, stopper), stopper)
 		}
 		return
 	}
@@ -48,7 +50,7 @@ func Serial(ngoroutines int,
 	wait.Add(ngoroutines)
 
 	go func() {
-		pusher(push)
+		pusher(push, stopper)
 		close(push)
 	}()
 	go func() {
@@ -62,7 +64,7 @@ func Serial(ngoroutines int,
 	for i := 0; i < ngoroutines; i++ {
 		go func() {
 			for item := range ipush {
-				pull <- serialItem{item.i, mapper(item.data)}
+				pull <- serialItem{item.i, mapper(item.data, stopper)}
 			}
 			wait.Done()
 		}()
@@ -72,7 +74,7 @@ func Serial(ngoroutines int,
 		for item := range pull {
 			items.put(item)
 			for items.ok() {
-				puller(items.pop())
+				puller(items.pop(), stopper)
 			}
 		}
 		wait.Done()
@@ -82,6 +84,29 @@ func Serial(ngoroutines int,
 	wait.Add(1)
 	close(pull)
 	wait.Wait() // Wait for pull.
+}
+
+// A Stopper is used in pipelines to communicate that work should stop.
+type Stopper chan struct{}
+
+// Stop sets Stopped to true.
+func (s Stopper) Stop() {
+	close(s)
+}
+
+// Stopped returns whether Stop was called.
+func (s Stopper) Stopped() bool {
+	select {
+	case <-s:
+		return true
+	default:
+		return false
+	}
+}
+
+// Creates a new stopper.
+func newStopper() Stopper {
+	return make(Stopper)
 }
 
 // General data with a serial number.
