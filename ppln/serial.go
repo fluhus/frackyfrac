@@ -21,9 +21,9 @@ const (
 //
 // Puller will be called on the results by the same order of pusher's input.
 func Serial(ngoroutines int,
-	pusher func(chan<- interface{}, Stopper),
-	mapper func(interface{}, Stopper) interface{},
-	puller func(interface{}, Stopper)) {
+	pusher func(push func(interface{}), s Stopper),
+	mapper func(a interface{}, s Stopper) interface{},
+	puller func(a interface{}, s Stopper)) {
 	if ngoroutines < 1 {
 		panic(fmt.Sprintf("bad number of goroutines: %d", ngoroutines))
 	}
@@ -32,54 +32,34 @@ func Serial(ngoroutines int,
 
 	// An optimization for a single thread.
 	if ngoroutines == 1 {
-		push := make(chan interface{}, ngoroutines*chanLenCoef)
-		go func() {
-			pusher(push, stopper)
-			close(push)
-		}()
-		for data := range push {
-			if stopper.Stopped() {
-				break
-			}
-			puller(mapper(data, stopper), stopper)
-		}
-		for range push { // Drain channel.
-		}
+		pusher(func(a interface{}) {
+			puller(mapper(a, stopper), stopper)
+		}, stopper)
 		return
 	}
 
-	push := make(chan interface{}, ngoroutines*chanLenCoef)
-	ipush := make(chan serialItem, ngoroutines*chanLenCoef)
+	push := make(chan serialItem, ngoroutines*chanLenCoef)
 	pull := make(chan serialItem, ngoroutines*chanLenCoef)
 	wait := &sync.WaitGroup{}
 	wait.Add(ngoroutines)
 
 	go func() {
-		pusher(push, stopper)
-		close(push)
-	}()
-	go func() {
 		i := 0
-		for data := range push {
-			if stopper.Stopped() {
-				break
-			}
-			ipush <- serialItem{i, data}
+		pusher(func(a interface{}) {
+			push <- serialItem{i, a}
 			i++
-		}
-		for range push { // Drain channel.
-		}
-		close(ipush)
+		}, stopper)
+		close(push)
 	}()
 	for i := 0; i < ngoroutines; i++ {
 		go func() {
-			for item := range ipush {
+			for item := range push {
 				if stopper.Stopped() {
 					break
 				}
 				pull <- serialItem{item.i, mapper(item.data, stopper)}
 			}
-			for range ipush { // Drain channel.
+			for range push { // Drain channel.
 			}
 			wait.Done()
 		}()

@@ -87,9 +87,9 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	ppln.Serial(*nt,
-		func(c chan<- interface{}, s ppln.Stopper) {
+		func(push func(interface{}), s ppln.Stopper) {
 			for i := range abnd {
-				c <- i
+				push(i)
 			}
 		}, func(a interface{}, s ppln.Stopper) interface{} {
 			var set []flatNode
@@ -202,17 +202,17 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 	if !divideByUnion {
 		sum = treeSum(tree)
 	}
-
 	type task struct {
 		a, b []flatNode
 	}
+
 	result := make([]float64, 0, len(x)*(len(x)-1)/2)
 
 	ppln.Serial(*nt,
-		func(push chan<- interface{}, s ppln.Stopper) {
+		func(push func(interface{}), s ppln.Stopper) {
 			for i, a := range x {
 				for _, b := range x[:i] {
-					push <- task{a, b}
+					push(task{a, b})
 				}
 			}
 		},

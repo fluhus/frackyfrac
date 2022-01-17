@@ -24,7 +24,7 @@ func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) 
 	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
-		func(c chan<- interface{}, s ppln.Stopper) {
+		func(push func(interface{}), s ppln.Stopper) {
 			for sc.Scan() {
 				if s.Stopped() {
 					break
@@ -37,7 +37,7 @@ func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) 
 					names = parts
 					continue
 				}
-				c <- sc.Text()
+				push(sc.Text())
 			}
 		},
 		func(a interface{}, s ppln.Stopper) interface{} {
@@ -92,12 +92,12 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, e
 	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
-		func(c chan<- interface{}, s ppln.Stopper) {
+		func(push func(interface{}), s ppln.Stopper) {
 			for sc.Scan() {
 				if s.Stopped() {
 					break
 				}
-				c <- sc.Text()
+				push(sc.Text())
 			}
 		},
 		func(a interface{}, s ppln.Stopper) interface{} {
