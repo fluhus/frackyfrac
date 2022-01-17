@@ -10,6 +10,7 @@ import (
 
 	"github.com/fluhus/biostuff/formats/newick"
 	"github.com/fluhus/frackyfrac/common"
+	"github.com/fluhus/frackyfrac/parser"
 	"github.com/fluhus/gostuff/gzipf"
 )
 
@@ -35,9 +36,9 @@ func main() {
 	common.ExitIfError(err)
 	var abnd []map[string]float64
 	if *sparse {
-		abnd, err = parseSparseAbundance(r)
+		abnd, err = parser.ParseSparseAbundance(r, *nt)
 	} else {
-		abnd, err = parseAbundance(r)
+		abnd, err = parser.ParseAbundance(r, *nt)
 	}
 	common.ExitIfError(err)
 
