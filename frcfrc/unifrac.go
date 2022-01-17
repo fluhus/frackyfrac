@@ -26,20 +26,42 @@ func parseAbundance(r io.Reader) ([]map[string]float64, error) {
 	sc.Buffer(nil, 1<<25)
 	var names []string
 	var result []map[string]float64
-	for sc.Scan() {
-		if names == nil {
-			parts := splitter.FindAllString(sc.Text(), -1)
-			if len(parts) == 0 {
-				return nil, fmt.Errorf("row #1 has 0 values")
+	var err error
+	type rowResult struct {
+		m   map[string]float64
+		err error
+	}
+	ppln.Serial(*nt,
+		func(c chan<- interface{}, s ppln.Stopper) {
+			for sc.Scan() {
+				if s.Stopped() {
+					break
+				}
+				if names == nil {
+					parts := splitter.FindAllString(sc.Text(), -1)
+					if len(parts) == 0 {
+						err = fmt.Errorf("row #1 has 0 values")
+					}
+					names = parts
+					continue
+				}
+				c <- sc.Text()
 			}
-			names = parts
-			continue
-		}
-		m, err := parseRow(sc.Text(), names)
-		if err != nil {
-			return nil, fmt.Errorf("row #%d: %v", len(result)+2, err)
-		}
-		result = append(result, m)
+		},
+		func(a interface{}, s ppln.Stopper) interface{} {
+			m, err := parseRow(a.(string), names)
+			return rowResult{m, err}
+		},
+		func(a interface{}, s ppln.Stopper) {
+			aa := a.(rowResult)
+			if aa.err != nil && err == nil { // Take first error.
+				s.Stop()
+				err = aa.err
+			}
+			result = append(result, aa.m)
+		})
+	if err != nil {
+		return nil, err
 	}
 	if sc.Err() != nil {
 		return nil, sc.Err()
@@ -91,16 +113,10 @@ func parseSparseAbundance(r io.Reader) ([]map[string]float64, error) {
 			}
 		},
 		func(a interface{}, s ppln.Stopper) interface{} {
-			if s.Stopped() {
-				return rowResult{}
-			}
 			m, err := parseSparseRow(a.(string))
 			return rowResult{m, err}
 		},
 		func(a interface{}, s ppln.Stopper) {
-			if s.Stopped() {
-				return
-			}
 			aa := a.(rowResult)
 			if aa.err != nil && err == nil { // Take first error.
 				s.Stop()

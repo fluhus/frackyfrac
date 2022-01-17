@@ -28,7 +28,7 @@ func Serial(ngoroutines int,
 		panic(fmt.Sprintf("bad number of goroutines: %d", ngoroutines))
 	}
 
-	stopper := newStopper()
+	stopper := make(Stopper)
 
 	// An optimization for a single thread.
 	if ngoroutines == 1 {
@@ -38,7 +38,12 @@ func Serial(ngoroutines int,
 			close(push)
 		}()
 		for data := range push {
+			if stopper.Stopped() {
+				break
+			}
 			puller(mapper(data, stopper), stopper)
+		}
+		for range push { // Drain channel.
 		}
 		return
 	}
@@ -56,15 +61,25 @@ func Serial(ngoroutines int,
 	go func() {
 		i := 0
 		for data := range push {
+			if stopper.Stopped() {
+				break
+			}
 			ipush <- serialItem{i, data}
 			i++
+		}
+		for range push { // Drain channel.
 		}
 		close(ipush)
 	}()
 	for i := 0; i < ngoroutines; i++ {
 		go func() {
 			for item := range ipush {
+				if stopper.Stopped() {
+					break
+				}
 				pull <- serialItem{item.i, mapper(item.data, stopper)}
+			}
+			for range ipush { // Drain channel.
 			}
 			wait.Done()
 		}()
@@ -72,10 +87,15 @@ func Serial(ngoroutines int,
 	go func() {
 		items := &serialHeap{}
 		for item := range pull {
+			if stopper.Stopped() {
+				break
+			}
 			items.put(item)
 			for items.ok() {
 				puller(items.pop(), stopper)
 			}
+		}
+		for range pull { // Drain channel.
 		}
 		wait.Done()
 	}()
@@ -102,11 +122,6 @@ func (s Stopper) Stopped() bool {
 	default:
 		return false
 	}
-}
-
-// Creates a new stopper.
-func newStopper() Stopper {
-	return make(Stopper)
 }
 
 // General data with a serial number.
