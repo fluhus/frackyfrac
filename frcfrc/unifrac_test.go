@@ -19,7 +19,11 @@ func TestUniFrac_simple(t *testing.T) {
 		{"s3": 1, "s2": 1},
 	}
 	want := []float64{6.0 / 9.0}
-	got := unifrac(abnd, tree, false)
+	var got []float64
+	unifrac(abnd, tree, false, func(f float64) bool {
+		got = append(got, f)
+		return true
+	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, false)=%v, want %v",
 			abnd, treeText, got, want)
@@ -38,7 +42,11 @@ func TestUniFrac_complex(t *testing.T) {
 		{"s7": 1, "s9": 1},
 	}
 	want := []float64{19.0 / 28.0, 16.0 / 22.0, 1.0}
-	got := unifrac(abnd, tree, false)
+	var got []float64
+	unifrac(abnd, tree, false, func(f float64) bool {
+		got = append(got, f)
+		return true
+	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, false)=%v, want %v",
 			abnd, treeText, got, want)
@@ -56,7 +64,11 @@ func TestUniFrac_weighted(t *testing.T) {
 		{"s3": 3, "s2": 2},
 	}
 	want := []float64{22.0 / 36.0}
-	got := unifrac(abnd, tree, true)
+	var got []float64
+	unifrac(abnd, tree, false, func(f float64) bool {
+		got = append(got, f)
+		return true
+	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, true)=%v, want %v",
 			abnd, treeText, got, want)

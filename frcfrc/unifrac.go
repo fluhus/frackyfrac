@@ -83,7 +83,7 @@ func validateSpecies(abnd []map[string]float64, tree *newick.Node) error {
 // Returns the unifrac distances between the given abundances, in flat pyramid
 // order.
 func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
-) []float64 {
+	forEach func(float64) bool) {
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	ppln.Serial(*nt,
@@ -99,7 +99,7 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 		}, func(a interface{}, s ppln.Stopper) {
 			sets = append(sets, a.([]flatNode))
 		})
-	return unifracDists(sets, tree, weighted)
+	unifracDists(sets, tree, weighted, forEach)
 }
 
 // Assigns an arbitrary unique number to each node in the tree.
@@ -197,7 +197,8 @@ func unifracDistWeighted(a, b []flatNode) float64 {
 
 // Returns the UniFrac distances between the given samples, in flat pyramid
 // order.
-func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
+func unifracDists(nodes [][]flatNode, tree *newick.Node, weighted bool,
+	forEach func(float64) bool) {
 	sum := 1.0
 	if !divideByUnion {
 		sum = treeSum(tree)
@@ -206,12 +207,10 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 		a, b []flatNode
 	}
 
-	result := make([]float64, 0, len(x)*(len(x)-1)/2)
-
 	ppln.Serial(*nt,
 		func(push func(interface{}), s ppln.Stopper) {
-			for i, a := range x {
-				for _, b := range x[:i] {
+			for i, a := range nodes {
+				for _, b := range nodes[:i] {
 					push(task{a, b})
 				}
 			}
@@ -224,8 +223,8 @@ func unifracDists(x [][]flatNode, tree *newick.Node, weighted bool) []float64 {
 				return unifracDistUnweighted(aa.a, aa.b) / sum
 			}
 		}, func(a interface{}, s ppln.Stopper) {
-			result = append(result, a.(float64))
+			if !forEach(a.(float64)) {
+				s.Stop()
+			}
 		})
-
-	return result
 }

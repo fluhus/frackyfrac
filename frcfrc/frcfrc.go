@@ -46,12 +46,12 @@ func main() {
 	common.ExitIfError(validateSpecies(abnd, tree))
 
 	fmt.Fprintln(os.Stderr, "Calculating distances")
-	dists := unifrac(abnd, tree, *wgt)
 	w, err := openOutput()
 	common.ExitIfError(err)
-	for _, d := range dists {
-		fmt.Fprintln(w, d)
-	}
+	unifrac(abnd, tree, *wgt, func(f float64) bool {
+		fmt.Fprintln(w, f)
+		return true
+	})
 	w.Close()
 	fmt.Fprintln(os.Stderr, "Took", time.Since(t))
 	fmt.Fprintln(os.Stderr, "Done")
