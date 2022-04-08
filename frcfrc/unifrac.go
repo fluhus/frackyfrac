@@ -9,9 +9,6 @@ import (
 	"github.com/fluhus/frackyfrac/ppln"
 )
 
-// TODO(amit): Clean this up.
-const divideByUnion = true
-
 // Converts an abundance map to a list of flat nodes. Returns the sum of
 // abundances under the given tree.
 func abundanceToFlatNodes(abnd map[string]float64, tree *newick.Node,
@@ -41,16 +38,6 @@ func normalizeFlatNodes(nodes []flatNode) {
 	for i := range nodes {
 		nodes[i].abnd /= sum
 	}
-}
-
-// Returns the sum of distances in a tree and its subtrees.
-func treeSum(tree *newick.Node) float64 {
-	sum := 0.0
-	tree.PreOrder(func(n *newick.Node) bool {
-		sum += n.Distance
-		return true
-	})
-	return sum
 }
 
 // Returns all the unique names in the tree.
@@ -151,9 +138,7 @@ func unifracDistUnweighted(a, b []flatNode) float64 {
 	for _, x := range b[j:] {
 		result += x.dist
 	}
-	if divideByUnion {
-		result /= (result + common)
-	}
+	result /= (result + common)
 	return result
 }
 
@@ -200,9 +185,6 @@ func unifracDistWeighted(a, b []flatNode) float64 {
 func unifracDists(nodes [][]flatNode, tree *newick.Node, weighted bool,
 	forEach func(float64) bool) {
 	sum := 1.0
-	if !divideByUnion {
-		sum = treeSum(tree)
-	}
 	type task struct {
 		a, b []flatNode
 	}
