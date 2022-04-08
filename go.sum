@@ -5,5 +5,7 @@ github.com/fluhus/biostuff v0.1.17-0.20211118133204-fb6c8c69a6a1 h1:Yy1norppGUN5
 github.com/fluhus/biostuff v0.1.17-0.20211118133204-fb6c8c69a6a1/go.mod h1:YSCr8RcUfJYFvH5NAJ4PoNeUWircbzjEtz9I8YGUb8I=
 github.com/fluhus/gostuff v0.1.9 h1:aD+DzxE6y8e2zZWwXD29W4VYHVR2i4OVqpaevvL1IW4=
 github.com/fluhus/gostuff v0.1.9/go.mod h1:NSv0ajGDf/Ig/p/P36gPerZoTTXldX7WZixdqOMwaeA=
+github.com/fluhus/gostuff v0.1.10-0.20220402221611-9ada7945e50c h1:FWBKzRaucu63aJNtDzaMjA7bEb0P1/YPd4SFJfBohJI=
+github.com/fluhus/gostuff v0.1.10-0.20220402221611-9ada7945e50c/go.mod h1:mvYCW5Wz5macktd7g1gQ54L6gTfhpbrs48Yx6rQgpOg=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=

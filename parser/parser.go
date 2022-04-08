@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/fluhus/frackyfrac/ppln"
+	"github.com/fluhus/gostuff/ppln"
 )
 
 // Splits input rows into individual values.
@@ -24,7 +24,7 @@ func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) 
 	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
-		func(push func(interface{}), s ppln.Stopper) {
+		func(push func(string), s ppln.Stopper) {
 			for sc.Scan() {
 				if s.Stopped() {
 					break
@@ -40,16 +40,15 @@ func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) 
 				push(sc.Text())
 			}
 		},
-		func(a interface{}, s ppln.Stopper) interface{} {
-			return parseRow(a.(string), names)
+		func(a string, _, _ int, s ppln.Stopper) parseResult {
+			return parseRow(a, names)
 		},
-		func(a interface{}, s ppln.Stopper) {
-			aa := a.(parseResult)
-			if aa.err != nil && err == nil { // First error.
+		func(a parseResult, s ppln.Stopper) {
+			if a.err != nil && err == nil { // First error.
 				s.Stop()
-				err = aa.err
+				err = a.err
 			}
-			result = append(result, aa.m)
+			result = append(result, a.m)
 		})
 	if err != nil {
 		return nil, err
@@ -92,7 +91,7 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, e
 	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
-		func(push func(interface{}), s ppln.Stopper) {
+		func(push func(string), s ppln.Stopper) {
 			for sc.Scan() {
 				if s.Stopped() {
 					break
@@ -100,16 +99,15 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, e
 				push(sc.Text())
 			}
 		},
-		func(a interface{}, s ppln.Stopper) interface{} {
-			return parseSparseRow(a.(string))
+		func(a string, _, _ int, s ppln.Stopper) parseResult {
+			return parseSparseRow(a)
 		},
-		func(a interface{}, s ppln.Stopper) {
-			aa := a.(parseResult)
-			if aa.err != nil && err == nil { // Take first error.
+		func(a parseResult, s ppln.Stopper) {
+			if a.err != nil && err == nil { // Take first error.
 				s.Stop()
-				err = aa.err
+				err = a.err
 			}
-			result = append(result, aa.m)
+			result = append(result, a.m)
 		})
 	if err != nil {
 		return nil, err

@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/newick"
-	"github.com/fluhus/frackyfrac/ppln"
+	"github.com/fluhus/gostuff/ppln"
 )
 
 // Converts an abundance map to a list of flat nodes. Returns the sum of
@@ -74,17 +74,17 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	ppln.Serial(*nt,
-		func(push func(interface{}), s ppln.Stopper) {
+		func(push func(int), s ppln.Stopper) {
 			for i := range abnd {
 				push(i)
 			}
-		}, func(a interface{}, s ppln.Stopper) interface{} {
+		}, func(a int, _, _ int, s ppln.Stopper) []flatNode {
 			var set []flatNode
-			abundanceToFlatNodes(abnd[a.(int)], tree, enum, &set)
+			abundanceToFlatNodes(abnd[a], tree, enum, &set)
 			normalizeFlatNodes(set)
 			return set
-		}, func(a interface{}, s ppln.Stopper) {
-			sets = append(sets, a.([]flatNode))
+		}, func(a []flatNode, s ppln.Stopper) {
+			sets = append(sets, a)
 		})
 	unifracDists(sets, tree, weighted, forEach)
 }
@@ -184,28 +184,27 @@ func unifracDistWeighted(a, b []flatNode) float64 {
 // order.
 func unifracDists(nodes [][]flatNode, tree *newick.Node, weighted bool,
 	forEach func(float64) bool) {
-	sum := 1.0
 	type task struct {
 		a, b []flatNode
 	}
 
 	ppln.Serial(*nt,
-		func(push func(interface{}), s ppln.Stopper) {
+		func(push func(task), s ppln.Stopper) {
 			for i, a := range nodes {
 				for _, b := range nodes[:i] {
 					push(task{a, b})
 				}
 			}
 		},
-		func(a interface{}, s ppln.Stopper) interface{} {
-			aa := a.(task)
+		func(a task, _, _ int, s ppln.Stopper) float64 {
+			aa := a
 			if weighted {
 				return unifracDistWeighted(aa.a, aa.b)
 			} else {
-				return unifracDistUnweighted(aa.a, aa.b) / sum
+				return unifracDistUnweighted(aa.a, aa.b)
 			}
-		}, func(a interface{}, s ppln.Stopper) {
-			if !forEach(a.(float64)) {
+		}, func(a float64, s ppln.Stopper) {
+			if !forEach(a) {
 				s.Stop()
 			}
 		})
