@@ -65,7 +65,7 @@ func TestUniFrac_weighted(t *testing.T) {
 	}
 	want := []float64{22.0 / 36.0}
 	var got []float64
-	unifrac(abnd, tree, false, func(f float64) bool {
+	unifrac(abnd, tree, true, func(f float64) bool {
 		got = append(got, f)
 		return true
 	})
