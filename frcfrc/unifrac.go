@@ -21,7 +21,7 @@ func abundanceToFlatNodes(abnd map[string]float64, tree *newick.Node,
 		sum += a
 	}
 	if sum > 0 {
-		*result = append(*result, flatNode{enum[tree], tree.Distance, sum})
+		*result = append(*result, flatNode{enum[tree], sum})
 	}
 	return sum
 }
@@ -86,7 +86,11 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 		}, func(a []flatNode, s ppln.Stopper) {
 			sets = append(sets, a)
 		})
-	unifracDists(sets, tree, weighted, forEach)
+	treeDists := make([]float64, len(enum))
+	for k, v := range enum {
+		treeDists[v] = k.Distance
+	}
+	unifracDists(sets, treeDists, weighted, forEach)
 }
 
 // Assigns an arbitrary unique number to each node in the tree.
@@ -103,86 +107,77 @@ func enumerateNodes(tree *newick.Node) map[*newick.Node]int {
 // tree objects.
 type flatNode struct {
 	id   int     // Node unique ID.
-	dist float64 // Distance from parent.
 	abnd float64 // Sum of abundances under this node.
 }
 
 // Returns unweighted UniFrac between the two samples, not divided by the
 // tree's sum.
-func unifracDistUnweighted(a, b []flatNode) float64 {
+func unifracDistUnweighted(a, b []flatNode, treeDists []float64) float64 {
 	result := 0.0
 	common := 0.0
 	i, j := 0, 0
 	for i < len(a) && j < len(b) {
 		if a[i].id < b[j].id {
-			result += a[i].dist
+			result += treeDists[a[i].id]
 			i++
 			continue
 		}
 		if a[i].id > b[j].id {
-			result += b[j].dist
+			result += treeDists[b[j].id]
 			j++
 			continue
 		}
-		if a[i].dist != b[j].dist {
-			panic(fmt.Sprintf("mismatching distances at (%d,%d): %f, %f",
-				i, j, a[i].dist, b[j].dist))
-		}
-		common += a[i].dist
+		common += treeDists[a[i].id]
 		i++
 		j++
 	}
 	for _, x := range a[i:] {
-		result += x.dist
+		result += treeDists[x.id]
 	}
 	for _, x := range b[j:] {
-		result += x.dist
+		result += treeDists[x.id]
 	}
 	result /= (result + common)
 	return result
 }
 
 // Returns weighted UniFrac between the two samples.
-func unifracDistWeighted(a, b []flatNode) float64 {
+func unifracDistWeighted(a, b []flatNode, treeDists []float64) float64 {
 	numer := 0.0
 	denom := 0.0
 	i, j := 0, 0
 	for i < len(a) && j < len(b) {
 		if a[i].id < b[j].id {
-			numer += a[i].dist * a[i].abnd
-			denom += a[i].dist * a[i].abnd
+			numer += treeDists[a[i].id] * a[i].abnd
+			denom += treeDists[a[i].id] * a[i].abnd
 			i++
 			continue
 		}
 		if a[i].id > b[j].id {
-			numer += b[j].dist * b[j].abnd
-			denom += b[j].dist * b[j].abnd
+			numer += treeDists[b[j].id] * b[j].abnd
+			denom += treeDists[b[j].id] * b[j].abnd
 			j++
 			continue
 		}
-		if a[i].dist != b[j].dist {
-			panic(fmt.Sprintf("mismatching distances at (%d,%d): %f, %f",
-				i, j, a[i].dist, b[j].dist))
-		}
-		numer += a[i].dist * math.Abs(a[i].abnd-b[j].abnd)
-		denom += a[i].dist * (a[i].abnd + b[j].abnd)
+		numer += treeDists[a[i].id] * math.Abs(a[i].abnd-b[j].abnd)
+		denom += treeDists[a[i].id] * (a[i].abnd + b[j].abnd)
 		i++
 		j++
 	}
 	for _, x := range a[i:] {
-		numer += x.dist * x.abnd
-		denom += x.dist * x.abnd
+		numer += treeDists[x.id] * x.abnd
+		denom += treeDists[x.id] * x.abnd
 	}
 	for _, x := range b[j:] {
-		numer += x.dist * x.abnd
-		denom += x.dist * x.abnd
+		numer += treeDists[x.id] * x.abnd
+		denom += treeDists[x.id] * x.abnd
 	}
 	return numer / denom
 }
 
 // Returns the UniFrac distances between the given samples, in flat pyramid
 // order.
-func unifracDists(nodes [][]flatNode, tree *newick.Node, weighted bool,
+func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
 	forEach func(float64) bool) {
 	type task struct {
 		a, b []flatNode
@@ -199,9 +194,9 @@ func unifracDists(nodes [][]flatNode, tree *newick.Node, weighted bool,
 		func(a task, _, _ int, s ppln.Stopper) float64 {
 			aa := a
 			if weighted {
-				return unifracDistWeighted(aa.a, aa.b)
+				return unifracDistWeighted(aa.a, aa.b, treeDists)
 			} else {
-				return unifracDistUnweighted(aa.a, aa.b)
+				return unifracDistUnweighted(aa.a, aa.b, treeDists)
 			}
 		}, func(a float64, s ppln.Stopper) {
 			if !forEach(a) {
