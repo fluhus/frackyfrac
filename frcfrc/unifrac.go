@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"runtime"
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/newick"
@@ -90,6 +91,7 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	for k, v := range enum {
 		treeDists[v] = k.Distance
 	}
+	runtime.GC() // Reduce memory footprint before the quadratic part.
 	unifracDists(sets, treeDists, weighted, forEach)
 }
 
