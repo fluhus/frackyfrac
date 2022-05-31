@@ -65,7 +65,7 @@ func parseRow(row string, names []string) parseResult {
 		return parseResult{nil, fmt.Errorf("has %d values, expected %d",
 			len(parts), len(names))}
 	}
-	m := map[string]float64{}
+	m := make(map[string]float64, len(parts)*11/10)
 	for i := range parts {
 		f, err := strconv.ParseFloat(parts[i], 64)
 		if err != nil {
@@ -120,7 +120,7 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int,
 
 func parseSparseRow(row string) parseResult {
 	parts := splitter.FindAllString(row, -1)
-	m := map[string]float64{}
+	m := make(map[string]float64, len(parts)*11/10)
 	for i := range parts {
 		species, val, err := splitSparse(parts[i])
 		if err != nil {
