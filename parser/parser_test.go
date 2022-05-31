@@ -12,7 +12,11 @@ func TestParseAbundance(t *testing.T) {
 		{"aa": 1, "bbbb": 2},
 		{"aa": 3, "bbbb": 4},
 	}
-	got, err := ParseAbundance(strings.NewReader(input), 1)
+	var got []map[string]float64
+	err := ParseAbundance(strings.NewReader(input), 1,
+		func(m map[string]float64) {
+			got = append(got, m)
+		})
 	if err != nil {
 		t.Fatalf("parseAbundance(%q) failed: %v", input, err)
 	}
@@ -29,7 +33,11 @@ func TestParseAbundanceSparse(t *testing.T) {
 		{},
 		{"d": 1, "c": 4, "a": 10},
 	}
-	got, err := ParseSparseAbundance(strings.NewReader(input), 1)
+	var got []map[string]float64
+	err := ParseSparseAbundance(strings.NewReader(input), 1,
+		func(m map[string]float64) {
+			got = append(got, m)
+		})
 	if err != nil {
 		t.Fatalf("parseAbundanceSparse(%q) failed: %v", input, err)
 	}

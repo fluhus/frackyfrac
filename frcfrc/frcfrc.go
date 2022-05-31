@@ -36,9 +36,13 @@ func main() {
 	common.ExitIfError(err)
 	var abnd []map[string]float64
 	if *sparse {
-		abnd, err = parser.ParseSparseAbundance(r, *nt)
+		err = parser.ParseSparseAbundance(r, *nt, func(m map[string]float64) {
+			abnd = append(abnd, m)
+		})
 	} else {
-		abnd, err = parser.ParseAbundance(r, *nt)
+		err = parser.ParseAbundance(r, *nt, func(m map[string]float64) {
+			abnd = append(abnd, m)
+		})
 	}
 	common.ExitIfError(err)
 

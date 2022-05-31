@@ -17,11 +17,11 @@ var splitter = regexp.MustCompile(`\S+`)
 
 // ParseAbundance parses the input abundance table. Returns a map for each row
 // where keys are species and values are abundances.
-func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) {
+func ParseAbundance(r io.Reader, ngoroutines int,
+	f func(map[string]float64)) error {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, 1<<25)
 	var names []string
-	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
 		func(push func(string), s ppln.Stopper) {
@@ -48,15 +48,15 @@ func ParseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) 
 				s.Stop()
 				err = a.err
 			}
-			result = append(result, a.m)
+			f(a.m)
 		})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if sc.Err() != nil {
-		return nil, sc.Err()
+		return sc.Err()
 	}
-	return result, nil
+	return nil
 }
 
 func parseRow(row string, names []string) parseResult {
@@ -85,10 +85,10 @@ func parseRow(row string, names []string) parseResult {
 
 // ParseSparseAbundance parses the input sparse abundance table. Returns a map
 // for each row where keys are species and values are abundances.
-func ParseSparseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, error) {
+func ParseSparseAbundance(r io.Reader, ngoroutines int,
+	f func(map[string]float64)) error {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(nil, 1<<25)
-	var result []map[string]float64
 	var err error
 	ppln.Serial(ngoroutines,
 		func(push func(string), s ppln.Stopper) {
@@ -107,15 +107,15 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int) ([]map[string]float64, e
 				s.Stop()
 				err = a.err
 			}
-			result = append(result, a.m)
+			f(a.m)
 		})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if sc.Err() != nil {
-		return nil, sc.Err()
+		return sc.Err()
 	}
-	return result, nil
+	return nil
 }
 
 func parseSparseRow(row string) parseResult {
