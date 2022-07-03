@@ -65,7 +65,7 @@ func parseRow(row string, names []string) parseResult {
 		return parseResult{nil, fmt.Errorf("has %d values, expected %d",
 			len(parts), len(names))}
 	}
-	m := make(map[string]float64, len(parts)*11/10)
+	m := map[string]float64{}
 	for i := range parts {
 		f, err := strconv.ParseFloat(parts[i], 64)
 		if err != nil {
