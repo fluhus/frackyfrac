@@ -15,7 +15,7 @@ import (
 	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/gzipf"
-	"github.com/fluhus/gostuff/maps"
+	"golang.org/x/exp/maps"
 )
 
 var (
@@ -26,6 +26,8 @@ var (
 )
 
 func main() {
+	// ezpprof.Start("/tmp/amitmit/profile")
+	// defer ezpprof.Stop()
 	common.ExitIfError(parseArgs())
 
 	files := expandFiles()
@@ -93,7 +95,7 @@ func expandFiles() []string {
 			result[file] = struct{}{}
 		}
 	}
-	return maps.Keys(result).([]string)
+	return maps.Keys(result)
 }
 
 // Calls f for each canonical kmer in the given reader.

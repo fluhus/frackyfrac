@@ -3,53 +3,27 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
 
 	"github.com/fluhus/biostuff/formats/newick"
 	"github.com/fluhus/gostuff/clustering"
+	"github.com/fluhus/gostuff/gnum"
+	"github.com/fluhus/gostuff/minhash"
+	"golang.org/x/exp/maps"
 )
 
-// Returns the Jaccard dissimilarity between 2 sketches.
-func dist(a, b []uint64) float64 {
-	i, j := 0, 0
-	common := 0
-	for i < len(a) && j < len(b) {
-		if a[i] < b[j] {
-			i++
-			continue
-		}
-		if a[i] > b[j] {
-			j++
-			continue
-		}
-		common++
-		i++
-		j++
-	}
-	return 1 - float64(common)/float64(len(a)+len(b)-common)
-}
+const (
+	// In development. If true, prints out the entropy of the distances.
+	// Considering whether this information is valueable.
+	reportEntropy = false
+)
 
-// Returns the entropy of dividing the given distances to buckets.
-func entropy(x []float64, buckets int) float64 {
-	counts := map[int]int{}
-	fbuckets := float64(buckets)
+// Returns the entropy of the given distances.
+func entropy(x []float64) float64 {
+	counts := map[float64]int{}
 	for _, xx := range x {
-		if xx < 0 || xx > 1 {
-			panic(fmt.Sprintf("value out of [0,1]: %f", xx))
-		}
-		counts[int(xx*fbuckets)]++
+		counts[math.Round(xx*100)]++
 	}
-	result := 0.0
-	for _, count := range counts {
-		p := float64(count) / float64(len(x))
-		result -= p * math.Log2(p)
-	}
-	return result
-}
-
-// Integer square-root.
-func isqrt(i int) int {
-	return int(math.Round(math.Sqrt(float64(i))))
+	return gnum.Entropy(maps.Values(counts))
 }
 
 // A tree node with depth instead of length.
@@ -60,19 +34,25 @@ type deepNode struct {
 }
 
 // Creates a tree from the given sketches with names as the leaf names.
-func makeTree(sketches [][]uint64, names []string) *newick.Node {
+func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node {
 	if len(sketches) != len(names) {
 		panic(fmt.Sprintf("mismatching lengths: %d, %d",
 			len(sketches), len(names)))
 	}
-	var distances []float64 // Collects distances for entropy.
-	hcl := clustering.Agglo(len(sketches), clustering.AggloMax,
+	var distances []float64
+	hcl := clustering.Agglo(len(sketches), clustering.AggloAverage,
 		func(i, j int) float64 {
-			d := dist(sketches[i], sketches[j])
+			jac := sketches[i].SoftJaccard(sketches[j])
+			d := -math.Log(2 * jac / (1 + jac))
 			distances = append(distances, d)
 			return d
 		})
-	fmt.Fprintln(os.Stderr, "Entropy:", entropy(distances, isqrt(len(distances))))
+	fmt.Printf("Ditances: [%.2f,%.2f] mean=%.2f+-%.2f\n",
+		gnum.Min(distances), gnum.Max(distances), gnum.Mean(distances),
+		gnum.Std(distances))
+	if reportEntropy {
+		fmt.Printf("Entropy=%.2f\n", entropy(distances))
+	}
 	var nodes []*deepNode
 	for _, name := range names {
 		nodes = append(nodes, &deepNode{name: name})
