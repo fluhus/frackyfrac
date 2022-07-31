@@ -40,12 +40,11 @@ func ParseAbundance(r io.Reader, ngoroutines int,
 			}
 			return sc.Err()
 		},
-		func(a string, _, _ int) (parseResult, error) {
-			r := parseRow(a, names)
-			return r, r.err
+		func(a string, _, _ int) (map[string]float64, error) {
+			return parseRow(a, names)
 		},
-		func(a parseResult) error {
-			f(a.m)
+		func(m map[string]float64) error {
+			f(m)
 			return nil
 		})
 	if err != nil {
@@ -54,28 +53,28 @@ func ParseAbundance(r io.Reader, ngoroutines int,
 	return nil
 }
 
-func parseRow(row string, names []string) parseResult {
+func parseRow(row string, names []string) (map[string]float64, error) {
 	parts := splitter.FindAllString(row, -1)
 	if len(parts) != len(names) {
-		return parseResult{nil, fmt.Errorf("has %d values, expected %d",
-			len(parts), len(names))}
+		return nil, fmt.Errorf("has %d values, expected %d",
+			len(parts), len(names))
 	}
 	m := map[string]float64{}
 	for i := range parts {
 		f, err := strconv.ParseFloat(parts[i], 64)
 		if err != nil {
-			return parseResult{nil, fmt.Errorf("value #%d: %v", i+1, err)}
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
 		}
 		if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
-			return parseResult{nil, fmt.Errorf("value #%d: bad value: %f",
-				i+1, f)}
+			return nil, fmt.Errorf("value #%d: bad value: %f",
+				i+1, f)
 		}
 		if f == 0 {
 			continue
 		}
 		m[names[i]] = f
 	}
-	return parseResult{m, nil}
+	return m, nil
 }
 
 // ParseSparseAbundance parses the input sparse abundance table. Returns a map
@@ -94,12 +93,11 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int,
 			}
 			return sc.Err()
 		},
-		func(a string, _, _ int) (parseResult, error) {
-			r := parseSparseRow(a)
-			return r, r.err
+		func(a string, _, _ int) (map[string]float64, error) {
+			return parseSparseRow(a)
 		},
-		func(a parseResult) error {
-			f(a.m)
+		func(m map[string]float64) error {
+			f(m)
 			return nil
 		})
 	if err != nil {
@@ -108,34 +106,31 @@ func ParseSparseAbundance(r io.Reader, ngoroutines int,
 	return nil
 }
 
-func parseSparseRow(row string) parseResult {
+func parseSparseRow(row string) (map[string]float64, error) {
 	parts := splitter.FindAllString(row, -1)
 	m := make(map[string]float64, len(parts)*11/10)
 	for i := range parts {
 		species, val, err := splitSparse(parts[i])
 		if err != nil {
-			return parseResult{nil, fmt.Errorf("value #%d: %v", i+1, err)}
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
 		}
 		if species == "" {
-			return parseResult{nil,
-				fmt.Errorf("value #%d: empty species name", i+1)}
+			return nil, fmt.Errorf("value #%d: empty species name", i+1)
 		}
 		f, err := strconv.ParseFloat(val, 64)
 		if err != nil {
-			return parseResult{nil, fmt.Errorf("value #%d: %v", i+1, err)}
+			return nil, fmt.Errorf("value #%d: %v", i+1, err)
 		}
 		if math.IsNaN(f) || math.IsInf(f, 0) || f < 0 {
-			return parseResult{nil,
-				fmt.Errorf("value #%d: bad value: %f", i+1, f)}
+			return nil, fmt.Errorf("value #%d: bad value: %f", i+1, f)
 		}
 		if f == 0 {
-			return parseResult{nil,
-				fmt.Errorf("value #%d: zeros are not allowed in sparse format",
-					i+1)}
+			return nil, fmt.Errorf(
+				"value #%d: zeros are not allowed in sparse format", i+1)
 		}
 		m[species] = f
 	}
-	return parseResult{m, nil}
+	return m, nil
 }
 
 func splitSparse(s string) (string, string, error) {
@@ -149,10 +144,4 @@ func splitSparse(s string) (string, string, error) {
 		return "", "", fmt.Errorf("no colon in %q", s)
 	}
 	return s[:last], s[last+1:], nil
-}
-
-// The result of parsing a single row.
-type parseResult struct {
-	m   map[string]float64
-	err error
 }
