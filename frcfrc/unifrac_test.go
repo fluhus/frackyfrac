@@ -20,9 +20,9 @@ func TestUniFrac_simple(t *testing.T) {
 	}
 	want := []float64{6.0 / 9.0}
 	var got []float64
-	unifrac(abnd, tree, false, func(f float64) bool {
+	unifrac(abnd, tree, false, func(f float64) error {
 		got = append(got, f)
-		return true
+		return nil
 	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, false)=%v, want %v",
@@ -43,9 +43,9 @@ func TestUniFrac_complex(t *testing.T) {
 	}
 	want := []float64{19.0 / 28.0, 16.0 / 22.0, 1.0}
 	var got []float64
-	unifrac(abnd, tree, false, func(f float64) bool {
+	unifrac(abnd, tree, false, func(f float64) error {
 		got = append(got, f)
-		return true
+		return nil
 	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, false)=%v, want %v",
