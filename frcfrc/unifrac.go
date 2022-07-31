@@ -71,21 +71,23 @@ func validateSpecies(abnd []map[string]float64, tree *newick.Node) error {
 // Returns the unifrac distances between the given abundances, in flat pyramid
 // order.
 func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
-	forEach func(float64) bool) {
+	forEach func(float64) error) {
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	ppln.Serial(*nt,
-		func(push func(int), s ppln.Stopper) {
+		func(push func(int), _ func() bool) error {
 			for i := range abnd {
 				push(i)
 			}
-		}, func(a int, _, _ int, s ppln.Stopper) []flatNode {
+			return nil
+		}, func(a int, _, _ int) ([]flatNode, error) {
 			var set []flatNode
 			abundanceToFlatNodes(abnd[a], tree, enum, &set)
 			normalizeFlatNodes(set)
-			return set
-		}, func(a []flatNode, s ppln.Stopper) {
+			return set, nil
+		}, func(a []flatNode) error {
 			sets = append(sets, a)
+			return nil
 		})
 	treeDists := make([]float64, len(enum))
 	for k, v := range enum {
@@ -180,29 +182,28 @@ func unifracDistWeighted(a, b []flatNode, treeDists []float64) float64 {
 // Returns the UniFrac distances between the given samples, in flat pyramid
 // order.
 func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
-	forEach func(float64) bool) {
+	forEach func(float64) error) {
 	type task struct {
 		a, b []flatNode
 	}
 
 	ppln.Serial(*nt,
-		func(push func(task), s ppln.Stopper) {
+		func(push func(task), _ func() bool) error {
 			for i, a := range nodes {
 				for _, b := range nodes[:i] {
 					push(task{a, b})
 				}
 			}
+			return nil
 		},
-		func(a task, _, _ int, s ppln.Stopper) float64 {
+		func(a task, _, _ int) (float64, error) {
 			aa := a
 			if weighted {
-				return unifracDistWeighted(aa.a, aa.b, treeDists)
+				return unifracDistWeighted(aa.a, aa.b, treeDists), nil
 			} else {
-				return unifracDistUnweighted(aa.a, aa.b, treeDists)
+				return unifracDistUnweighted(aa.a, aa.b, treeDists), nil
 			}
-		}, func(a float64, s ppln.Stopper) {
-			if !forEach(a) {
-				s.Stop()
-			}
+		}, func(a float64) error {
+			return forEach(a)
 		})
 }

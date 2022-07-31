@@ -19,42 +19,37 @@ var splitter = regexp.MustCompile(`\S+`)
 // where keys are species and values are abundances.
 func ParseAbundance(r io.Reader, ngoroutines int,
 	f func(map[string]float64)) error {
-	sc := bufio.NewScanner(r)
-	sc.Buffer(nil, 1<<25)
 	var names []string
-	var err error
-	ppln.Serial(ngoroutines,
-		func(push func(string), s ppln.Stopper) {
+	err := ppln.Serial(ngoroutines,
+		func(push func(string), stop func() bool) error {
+			sc := bufio.NewScanner(r)
+			sc.Buffer(nil, 1<<25)
 			for sc.Scan() {
-				if s.Stopped() {
+				if stop() {
 					break
 				}
 				if names == nil {
 					parts := splitter.FindAllString(sc.Text(), -1)
 					if len(parts) == 0 {
-						err = fmt.Errorf("row #1 has 0 values")
+						return fmt.Errorf("row #1 has 0 values")
 					}
 					names = parts
 					continue
 				}
 				push(sc.Text())
 			}
+			return sc.Err()
 		},
-		func(a string, _, _ int, s ppln.Stopper) parseResult {
-			return parseRow(a, names)
+		func(a string, _, _ int) (parseResult, error) {
+			r := parseRow(a, names)
+			return r, r.err
 		},
-		func(a parseResult, s ppln.Stopper) {
-			if a.err != nil && err == nil { // First error.
-				s.Stop()
-				err = a.err
-			}
+		func(a parseResult) error {
 			f(a.m)
+			return nil
 		})
 	if err != nil {
 		return err
-	}
-	if sc.Err() != nil {
-		return sc.Err()
 	}
 	return nil
 }
@@ -87,33 +82,28 @@ func parseRow(row string, names []string) parseResult {
 // for each row where keys are species and values are abundances.
 func ParseSparseAbundance(r io.Reader, ngoroutines int,
 	f func(map[string]float64)) error {
-	sc := bufio.NewScanner(r)
-	sc.Buffer(nil, 1<<25)
-	var err error
-	ppln.Serial(ngoroutines,
-		func(push func(string), s ppln.Stopper) {
+	err := ppln.Serial(ngoroutines,
+		func(push func(string), stop func() bool) error {
+			sc := bufio.NewScanner(r)
+			sc.Buffer(nil, 1<<25)
 			for sc.Scan() {
-				if s.Stopped() {
+				if stop() {
 					break
 				}
 				push(sc.Text())
 			}
+			return sc.Err()
 		},
-		func(a string, _, _ int, s ppln.Stopper) parseResult {
-			return parseSparseRow(a)
+		func(a string, _, _ int) (parseResult, error) {
+			r := parseSparseRow(a)
+			return r, r.err
 		},
-		func(a parseResult, s ppln.Stopper) {
-			if a.err != nil && err == nil { // Take first error.
-				s.Stop()
-				err = a.err
-			}
+		func(a parseResult) error {
 			f(a.m)
+			return nil
 		})
 	if err != nil {
 		return err
-	}
-	if sc.Err() != nil {
-		return sc.Err()
 	}
 	return nil
 }

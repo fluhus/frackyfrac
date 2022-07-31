@@ -52,9 +52,9 @@ func main() {
 	fmt.Fprintln(os.Stderr, "Calculating distances")
 	w, err := openOutput()
 	common.ExitIfError(err)
-	unifrac(abnd, tree, *wgt, func(f float64) bool {
-		fmt.Fprintln(w, f)
-		return true
+	unifrac(abnd, tree, *wgt, func(f float64) error {
+		_, err := fmt.Fprintln(w, f)
+		return err
 	})
 	w.Close()
 	fmt.Fprintln(os.Stderr, "Took", time.Since(t))

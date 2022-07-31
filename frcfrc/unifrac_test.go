@@ -65,9 +65,9 @@ func TestUniFrac_weighted(t *testing.T) {
 	}
 	want := []float64{22.0 / 36.0}
 	var got []float64
-	unifrac(abnd, tree, true, func(f float64) bool {
+	unifrac(abnd, tree, true, func(f float64) error {
 		got = append(got, f)
-		return true
+		return nil
 	})
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unifrac(%v, %q, true)=%v, want %v",
