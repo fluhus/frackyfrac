@@ -14,7 +14,7 @@ import (
 	"github.com/fluhus/biostuff/formats/fasta"
 	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/frackyfrac/common"
-	"github.com/fluhus/gostuff/gzipf"
+	"github.com/fluhus/gostuff/aio"
 	"golang.org/x/exp/maps"
 )
 
@@ -99,7 +99,7 @@ func expandFiles() []string {
 }
 
 // Calls f for each canonical kmer in the given reader.
-func iterKmers(r *gzipf.Reader, k int, f func([]byte)) error {
+func iterKmers(r *aio.Reader, k int, f func([]byte)) error {
 	fqr := fasta.NewReader(r)
 	var err error
 	var fq *fasta.Fasta

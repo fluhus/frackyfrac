@@ -11,7 +11,7 @@ import (
 	"github.com/fluhus/biostuff/formats/newick"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/frackyfrac/parser"
-	"github.com/fluhus/gostuff/gzipf"
+	"github.com/fluhus/gostuff/aio"
 )
 
 var (
@@ -82,7 +82,7 @@ func parseArgs() error {
 // Opens the output file, or stdout.
 func openInput() (io.ReadCloser, error) {
 	if *fin != "" {
-		return gzipf.Open(*fin)
+		return aio.Open(*fin)
 	} else {
 		return os.Stdin, nil
 	}
@@ -91,7 +91,7 @@ func openInput() (io.ReadCloser, error) {
 // Opens the input file, or stdin.
 func openOutput() (io.WriteCloser, error) {
 	if *fout != "" {
-		return gzipf.Create(*fout)
+		return aio.Create(*fout)
 	} else {
 		return os.Stdout, nil
 	}
@@ -99,7 +99,7 @@ func openOutput() (io.WriteCloser, error) {
 
 // Reads the tree from the path in the argument.
 func readTree() (*newick.Node, error) {
-	f, err := gzipf.Open(*ftree)
+	f, err := aio.Open(*ftree)
 	if err != nil {
 		return nil, err
 	}
