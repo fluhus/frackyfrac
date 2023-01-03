@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 
 	"github.com/fluhus/biostuff/formats/newick"
 	"github.com/fluhus/gostuff/clustering"
@@ -51,7 +52,7 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 		gnum.Min(distances), gnum.Max(distances), gnum.Mean(distances),
 		gnum.Std(distances))
 	if reportEntropy {
-		fmt.Printf("Entropy=%.2f\n", entropy(distances))
+		fmt.Fprintf(os.Stderr, "Entropy=%.2f\n", entropy(distances))
 	}
 	var nodes []*deepNode
 	for _, name := range names {
