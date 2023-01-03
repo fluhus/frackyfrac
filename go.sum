@@ -2,8 +2,8 @@ github.com/agonopol/go-stem v0.0.0-20150630113328-985885018250/go.mod h1:JpR7ykf
 github.com/fluhus/biostuff v0.1.17-0.20211118133204-fb6c8c69a6a1 h1:Yy1norppGUN5raXuAZankxnmxK/iiJL8FFhwL2Yu/bs=
 github.com/fluhus/biostuff v0.1.17-0.20211118133204-fb6c8c69a6a1/go.mod h1:YSCr8RcUfJYFvH5NAJ4PoNeUWircbzjEtz9I8YGUb8I=
 github.com/fluhus/gostuff v0.1.9/go.mod h1:NSv0ajGDf/Ig/p/P36gPerZoTTXldX7WZixdqOMwaeA=
-github.com/fluhus/gostuff v0.1.15 h1:saG1H9f64tna6zDyh/I17UFTC1sM2PM5b0bFOeeuXO8=
-github.com/fluhus/gostuff v0.1.15/go.mod h1:qp0+R6TfYJD4f3buqBkmSdd4k8Lyfwv6L1KrbDZjllY=
+github.com/fluhus/gostuff v0.1.16-0.20230103081104-0f64331d6ee2 h1:xH10Tqz0JnVA2lw9KXlmVg5RkSZ3fqoCAWYmRew3+io=
+github.com/fluhus/gostuff v0.1.16-0.20230103081104-0f64331d6ee2/go.mod h1:qp0+R6TfYJD4f3buqBkmSdd4k8Lyfwv6L1KrbDZjllY=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 golang.org/x/exp v0.0.0-20220325121720-054d8573a5d8 h1:Xt4/LzbTwfocTk9ZLEu4onjeFucl88iW+v4j4PWbQuE=
