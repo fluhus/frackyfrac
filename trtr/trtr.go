@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/base32"
 	"flag"
@@ -10,11 +9,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/fluhus/biostuff/formats/fasta"
 	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/aio"
+	"github.com/fluhus/gostuff/ppln"
 	"golang.org/x/exp/maps"
 )
 
@@ -23,11 +24,10 @@ var (
 	n    = flag.Uint("n", 10000, "Sketch length")
 	fout = flag.String("o", "", "Path to output file (default stdout)")
 	keep = flag.Bool("keep-temp", false, "Do not remove temporary files")
+	nt   = flag.Int("t", 1, "Number of threads")
 )
 
 func main() {
-	// ezpprof.Start("/tmp/amitmit/profile")
-	// defer ezpprof.Stop()
 	common.ExitIfError(parseArgs())
 
 	files := expandFiles()
@@ -45,17 +45,30 @@ func main() {
 
 	tim := common.NewTimerMessasge("* files sketched")
 	var sketchFiles []string
-	for _, file := range files {
-		f := filepath.Join(tmp, "sketch_"+strhash(file)+".json.gz")
-		common.ExitIfError(sketchFile(file, f))
-		sketchFiles = append(sketchFiles, f)
-		tim.Inc()
-	}
+	ppln.Serial(
+		*nt,
+		func(push func(string), stop func() bool) error {
+			for _, file := range files {
+				push(file)
+			}
+			return nil
+		},
+		func(file string, i, g int) (string, error) {
+			fout := filepath.Join(tmp, "sketch_"+strhash(file)+".json.gz")
+			return fout, sketchFile(file, fout)
+		},
+		func(f string) error {
+			sketchFiles = append(sketchFiles, f)
+			tim.Inc()
+			return nil
+		})
 	tim.Done()
 
 	fmt.Fprintln(os.Stderr, "Loading sketches")
+	tim = common.NewTimerMessasge("loading")
 	sketches, err := loadSketches(sketchFiles)
 	common.ExitIfError(err)
+	tim.Done()
 
 	fmt.Fprintln(os.Stderr, "Building tree")
 	tim = common.NewTimerMessasge("tree building")
@@ -86,7 +99,7 @@ func parseArgs() error {
 	return nil
 }
 
-// Expands the given glob patterns to files, removing repetitions.
+// Expands the argument glob patterns to files, removing repetitions.
 func expandFiles() []string {
 	result := map[string]struct{}{}
 	for _, pat := range flag.Args() {
@@ -95,7 +108,9 @@ func expandFiles() []string {
 			result[file] = struct{}{}
 		}
 	}
-	return maps.Keys(result)
+	keys := maps.Keys(result)
+	sort.Strings(keys)
+	return keys
 }
 
 // Calls f for each canonical kmer in the given reader.
@@ -103,19 +118,12 @@ func iterKmers(r *aio.Reader, k int, f func([]byte)) error {
 	fqr := fasta.NewReader(r)
 	var err error
 	var fq *fasta.Fasta
-	var rc []byte
 	for fq, err = fqr.Read(); err == nil; fq, err = fqr.Read() {
 		seq := fq.Sequence
-		rc = sequtil.ReverseComplement(rc[:0], seq)
-		nk := len(seq) - k + 1
-		for i := 0; i < nk; i++ {
-			kmer := seq[i : i+k]
-			kmerRC := rc[len(rc)-i-k : len(rc)-i]
-			if bytes.Compare(kmer, kmerRC) == 1 {
-				kmer = kmerRC
-			}
+		sequtil.CanonicalSubsequences(seq, k, func(kmer []byte) bool {
 			f(kmer)
-		}
+			return true
+		})
 	}
 	if err != io.EOF {
 		return err
