@@ -43,8 +43,7 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 	var distances []float64
 	hcl := clustering.Agglo(len(sketches), clustering.AggloAverage,
 		func(i, j int) float64 {
-			jac := sketches[i].SoftJaccard(sketches[j])
-			d := -math.Log(2 * jac / (1 + jac))
+			d := jaccardToMash(sketches[i].Jaccard(sketches[j]))
 			distances = append(distances, d)
 			return d
 		})
@@ -68,6 +67,13 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 		nodes[step.C2] = parent
 	}
 	return nodes[len(nodes)-1].toNewickNode()
+}
+
+func jaccardToMash(jac float64) float64 {
+	if jac == 0 {
+		return 1
+	}
+	return gnum.Min2(-math.Log(2*jac/(1+jac))/float64(*k), 1)
 }
 
 // Converts a node with depth to a node with distance.
