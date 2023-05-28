@@ -1,7 +1,7 @@
 github.com/fluhus/biostuff v0.1.20-0.20230110093152-95d09dfe462c h1:9QvX4FJhHn+bfyIRqYjAlDmKxNhb9+L1GiNIBfRIBbA=
 github.com/fluhus/biostuff v0.1.20-0.20230110093152-95d09dfe462c/go.mod h1:+9RqwKxc/i0/OpZw+WYgNCM5qrTg+SIDzA4nSgbU2Kc=
-github.com/fluhus/gostuff v0.1.16-0.20230103081104-0f64331d6ee2 h1:xH10Tqz0JnVA2lw9KXlmVg5RkSZ3fqoCAWYmRew3+io=
-github.com/fluhus/gostuff v0.1.16-0.20230103081104-0f64331d6ee2/go.mod h1:qp0+R6TfYJD4f3buqBkmSdd4k8Lyfwv6L1KrbDZjllY=
+github.com/fluhus/gostuff v0.1.17-0.20230331144638-656620157923 h1:VyzVa0PTkGMoY82/RbZ4UFm84tvFQUni/cFVteEnAl4=
+github.com/fluhus/gostuff v0.1.17-0.20230331144638-656620157923/go.mod h1:qp0+R6TfYJD4f3buqBkmSdd4k8Lyfwv6L1KrbDZjllY=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 h1:tnebWN09GYg9OLPss1KXj8txwZc6X6uMr6VFdcGNbHw=
