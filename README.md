@@ -35,3 +35,7 @@ trtr -k 10 -o my_genomes.tree "species_*.fa"
 Consult the [wiki][wiki] for more details.
 
 [wiki]: https://github.com/fluhus/frackyfrac/wiki
+
+## Testing
+
+See the `testdata` directory for tests of this implementation.
