@@ -33,7 +33,7 @@ func main() {
 }
 
 const usageMessage = `` +
-	`SparsySparse converts dense format abundance tables to sparse format.
+	`SparseySparse converts dense format abundance tables to sparse format.
 
 Usage:
 sprspr < INPUT_FILE > OUTPUT_FILE
