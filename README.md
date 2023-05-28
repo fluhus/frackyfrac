@@ -18,18 +18,18 @@ to add it.
 
 ## Usage
 
+Calculating UniFrac:
+
+```
+frcfrc -t my_genomes.tree -i my_abundances.tsv -o distances.txt
+```
+
 Creating a tree (optional):
 
 ```
 trtr -k 10 -o my_genomes.tree species_1.fa species_2.fa species_3.fa
 -- or --
 trtr -k 10 -o my_genomes.tree "species_*.fa"
-```
-
-Calculating UniFrac:
-
-```
-frcfrc -t my_genomes.tree -i my_abundances.txt -o distances.txt
 ```
 
 Consult the [wiki][wiki] for more details.
