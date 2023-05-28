@@ -21,6 +21,8 @@ var (
 	wgt    = flag.Bool("w", false, "Use weighted UniFrac (default unweighted)")
 	sparse = flag.Bool("s", false, "Input is in sparse format")
 	nt     = flag.Int("p", 1, "Number of threads")
+	nnorm  = flag.Bool("l", false, "Leave abundance values unnormalized "+
+		"(default normalize each sample to sum up to 1)")
 )
 
 func main() {
@@ -75,6 +77,9 @@ func parseArgs() error {
 	}
 	if *nt < 1 {
 		return fmt.Errorf("bad number of threads: %d", *nt)
+	}
+	if *nnorm && !*wgt {
+		return fmt.Errorf("-l can only be used with weighted unifrac")
 	}
 	return nil
 }

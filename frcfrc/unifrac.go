@@ -83,7 +83,9 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 		}, func(a int, _, _ int) ([]flatNode, error) {
 			var set []flatNode
 			abundanceToFlatNodes(abnd[a], tree, enum, &set)
-			normalizeFlatNodes(set)
+			if !*nnorm {
+				normalizeFlatNodes(set)
+			}
 			return set, nil
 		}, func(a []flatNode) error {
 			sets = append(sets, a)
