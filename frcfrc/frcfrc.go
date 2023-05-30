@@ -114,10 +114,11 @@ func readTree() (*newick.Node, error) {
 
 // Prints usage help message.
 func usage() {
-	fmt.Fprintln(flag.CommandLine.Output(),
-		`FrackyFrac calculates UniFrac on the given abundance table.
-Outputs one distance per line in the order (1,2),(1,3)...(1,n),(2,3)...(2,n).
-
-Params:`)
+	fmt.Fprintln(flag.CommandLine.Output(), usageMessage)
 	flag.PrintDefaults()
 }
+
+const usageMessage = `FrackyFrac calculates UniFrac on the given abundance table.
+Outputs one distance per line in the order (1,2),(1,3),(2,3)...(1,n)...(n-1,n).
+
+Params:`
