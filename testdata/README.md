@@ -19,7 +19,7 @@ Windows:
 run.bat
 ```
 
-## Running a QIIME test
+## Running a QIIME comparison
 
 Compares QIIME's implementation (SSU) against the manually calculated results,
 to verify that the two implementations agree.
