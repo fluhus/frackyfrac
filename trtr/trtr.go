@@ -87,7 +87,7 @@ func main() {
 func parseArgs() error {
 	if len(os.Args) == 1 {
 		usage()
-		os.Exit(0)
+		os.Exit(1)
 	}
 	flag.Usage = usage
 	flag.Parse()
