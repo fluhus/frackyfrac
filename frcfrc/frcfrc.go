@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/fluhus/biostuff/formats/newick"
@@ -27,6 +28,7 @@ var (
 
 func main() {
 	common.ExitIfError(parseArgs())
+	debug.SetGCPercent(33) // Make the garbage collector more eager.
 
 	t := time.Now()
 	fmt.Fprintln(os.Stderr, "Reading tree")
@@ -51,7 +53,6 @@ func main() {
 	fmt.Fprintln(os.Stderr, "Validating")
 	common.ExitIfError(validateSpecies(abnd, tree))
 
-	fmt.Fprintln(os.Stderr, "Calculating distances")
 	w, err := openOutput()
 	common.ExitIfError(err)
 	unifrac(abnd, tree, *wgt, func(f float64) error {

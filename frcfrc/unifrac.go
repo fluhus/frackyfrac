@@ -2,13 +2,29 @@ package main
 
 import (
 	"fmt"
+	"iter"
 	"math"
+	"os"
 	"runtime"
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/newick"
-	"github.com/fluhus/gostuff/ppln"
+	"github.com/fluhus/gostuff/ppln/v2"
 )
+
+const (
+	// Check for abundance only if a node is a leaf.
+	flatNodeOptimization = true
+
+	// Print debug information, for development.
+	debugPrints = false
+)
+
+func init() {
+	if flatNodeOptimization && debugPrints {
+		fmt.Fprintln(os.Stderr, "*** Flat node optimization ***")
+	}
+}
 
 // Converts an abundance map to a list of flat nodes. Returns the sum of
 // abundances under the given tree.
@@ -18,8 +34,16 @@ func abundanceToFlatNodes(abnd map[string]float64, tree *newick.Node,
 	for _, c := range tree.Children {
 		sum += abundanceToFlatNodes(abnd, c, enum, result)
 	}
-	if a := abnd[tree.Name]; a > 0 {
-		sum += a
+	if flatNodeOptimization {
+		if len(tree.Children) == 0 {
+			if a := abnd[tree.Name]; a > 0 {
+				sum += a
+			}
+		}
+	} else {
+		if a := abnd[tree.Name]; a > 0 {
+			sum += a
+		}
 	}
 	if sum > 0 {
 		*result = append(*result, flatNode{enum[tree], sum})
@@ -74,20 +98,19 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	forEach func(float64) error) {
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
-	ppln.Serial(*nt,
-		func(push func(int), _ func() bool) error {
-			for i := range abnd {
-				push(i)
-			}
-			return nil
-		}, func(a int, _, _ int) ([]flatNode, error) {
+	fmt.Fprintln(os.Stderr, "Converting abundances")
+	ppln.Serial[map[string]float64, []flatNode](
+		*nt,
+		ppln.SliceInput(abnd),
+		func(a map[string]float64, _, _ int) ([]flatNode, error) {
 			var set []flatNode
-			abundanceToFlatNodes(abnd[a], tree, enum, &set)
+			abundanceToFlatNodes(a, tree, enum, &set)
 			if !*nnorm {
 				normalizeFlatNodes(set)
 			}
 			return set, nil
-		}, func(a []flatNode) error {
+		},
+		func(a []flatNode) error {
 			sets = append(sets, a)
 			return nil
 		})
@@ -95,7 +118,8 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	for k, v := range enum {
 		treeDists[v] = k.Distance
 	}
-	runtime.GC() // Reduce memory footprint before the quadratic part.
+	runtime.GC()
+	fmt.Fprintln(os.Stderr, "Calculating distances")
 	unifracDists(sets, treeDists, weighted, forEach)
 }
 
@@ -185,27 +209,29 @@ func unifracDistWeighted(a, b []flatNode, treeDists []float64) float64 {
 // order.
 func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
 	forEach func(float64) error) {
-	type task struct {
-		a, b []flatNode
-	}
-
 	ppln.Serial(*nt,
-		func(push func(task), _ func() bool) error {
-			for i, a := range nodes {
-				for _, b := range nodes[:i] {
-					push(task{a, b})
-				}
-			}
-			return nil
-		},
-		func(a task, _, _ int) (float64, error) {
+		iterPairs(nodes),
+		func(a [2][]flatNode, _, _ int) (float64, error) {
 			aa := a
 			if weighted {
-				return unifracDistWeighted(aa.a, aa.b, treeDists), nil
+				return unifracDistWeighted(aa[0], aa[1], treeDists), nil
 			} else {
-				return unifracDistUnweighted(aa.a, aa.b, treeDists), nil
+				return unifracDistUnweighted(aa[0], aa[1], treeDists), nil
 			}
 		}, func(a float64) error {
 			return forEach(a)
 		})
+}
+
+// Returns an iterator over pairs of elements in s.
+func iterPairs[T any](s []T) iter.Seq2[[2]T, error] {
+	return func(yield func([2]T, error) bool) {
+		for i := range s {
+			for j := range i {
+				if !yield([2]T{s[i], s[j]}, nil) {
+					return
+				}
+			}
+		}
+	}
 }

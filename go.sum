@@ -1,8 +1,8 @@
 github.com/fluhus/biostuff v0.1.20-0.20230110093152-95d09dfe462c h1:9QvX4FJhHn+bfyIRqYjAlDmKxNhb9+L1GiNIBfRIBbA=
 github.com/fluhus/biostuff v0.1.20-0.20230110093152-95d09dfe462c/go.mod h1:+9RqwKxc/i0/OpZw+WYgNCM5qrTg+SIDzA4nSgbU2Kc=
-github.com/fluhus/gostuff v0.2.1 h1:cXmLQgVtQzb3DTSJ+8aBzc4ClS/cauSsePkywWsgj2U=
-github.com/fluhus/gostuff v0.2.1/go.mod h1:vR4cGqPneT1ztSCl8PM1yIqzPJpT54wckwPAxfMs3e0=
+github.com/fluhus/gostuff v0.4.1-0.20240220082312-53b48ef36dd6 h1:3Yn0MtAH0qbMcQ7OGFIPu9X3oB8tZ/qF28I+/lhoAfM=
+github.com/fluhus/gostuff v0.4.1-0.20240220082312-53b48ef36dd6/go.mod h1:dz3xGDMZnUyGQo+qy3NnGFfY8kP9MV0XziplUFgalXs=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 h1:tnebWN09GYg9OLPss1KXj8txwZc6X6uMr6VFdcGNbHw=
-golang.org/x/exp v0.0.0-20220827204233-334a2380cb91/go.mod h1:cyybsKvd6eL0RnXn6p/Grxp8F5bW7iYuBgsNCOHpMYE=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa h1:FRnLl4eNAQl8hwxVVC17teOw8kdjVDVAiFMtgUdTSRQ=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa/go.mod h1:zk2irFbV9DP96SEBUUAy67IdHUaZuSnrz1n472HUCLE=

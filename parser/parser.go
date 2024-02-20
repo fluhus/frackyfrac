@@ -5,11 +5,12 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"iter"
 	"math"
 	"regexp"
 	"strconv"
 
-	"github.com/fluhus/gostuff/ppln"
+	"github.com/fluhus/gostuff/ppln/v2"
 )
 
 // Splits input rows into individual values.
@@ -20,25 +21,27 @@ var splitter = regexp.MustCompile(`\S+`)
 func ParseAbundance(r io.Reader, ngoroutines int,
 	f func(map[string]float64)) error {
 	var names []string
-	err := ppln.Serial(ngoroutines,
-		func(push func(string), stop func() bool) error {
-			sc := bufio.NewScanner(r)
-			sc.Buffer(nil, 1<<25)
-			for sc.Scan() {
-				if stop() {
-					break
+	err := ppln.Serial(
+		ngoroutines,
+		func(yield func(string, error) bool) {
+			for row, err := range iterRows(r) {
+				if err != nil {
+					yield("", err)
+					return
 				}
 				if names == nil {
-					parts := splitter.FindAllString(sc.Text(), -1)
+					parts := splitter.FindAllString(row, -1)
 					if len(parts) == 0 {
-						return fmt.Errorf("row #1 has 0 values")
+						yield("", fmt.Errorf("row #1 has 0 values"))
+						return
 					}
 					names = parts
 					continue
 				}
-				push(sc.Text())
+				if !yield(row, err) {
+					return
+				}
 			}
-			return sc.Err()
 		},
 		func(a string, _, _ int) (map[string]float64, error) {
 			return parseRow(a, names)
@@ -82,17 +85,7 @@ func parseRow(row string, names []string) (map[string]float64, error) {
 func ParseSparseAbundance(r io.Reader, ngoroutines int,
 	f func(map[string]float64)) error {
 	err := ppln.Serial(ngoroutines,
-		func(push func(string), stop func() bool) error {
-			sc := bufio.NewScanner(r)
-			sc.Buffer(nil, 1<<25)
-			for sc.Scan() {
-				if stop() {
-					break
-				}
-				push(sc.Text())
-			}
-			return sc.Err()
-		},
+		iterRows(r),
 		func(a string, _, _ int) (map[string]float64, error) {
 			return parseSparseRow(a)
 		},
@@ -144,4 +137,19 @@ func splitSparse(s string) (string, string, error) {
 		return "", "", fmt.Errorf("no colon in %q", s)
 	}
 	return s[:last], s[last+1:], nil
+}
+
+func iterRows(r io.Reader) iter.Seq2[string, error] {
+	return func(yield func(string, error) bool) {
+		sc := bufio.NewScanner(r)
+		sc.Buffer(nil, 1<<25)
+		for sc.Scan() {
+			if !yield(sc.Text(), nil) {
+				return
+			}
+		}
+		if err := sc.Err(); err != nil {
+			yield("", err)
+		}
+	}
 }
