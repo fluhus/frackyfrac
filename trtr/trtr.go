@@ -16,6 +16,7 @@ import (
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/aio"
 	"github.com/fluhus/gostuff/ppln"
+	"github.com/fluhus/gostuff/ptimer"
 	"golang.org/x/exp/maps"
 )
 
@@ -43,7 +44,7 @@ func main() {
 	}
 	fmt.Fprintln(os.Stderr, "Temp dir:", tmp)
 
-	tim := common.NewTimerMessasge("* files sketched")
+	pt := ptimer.NewMessage("{} files sketched")
 	var sketchFiles []string
 	ppln.Serial(
 		*nt,
@@ -59,21 +60,21 @@ func main() {
 		},
 		func(f string) error {
 			sketchFiles = append(sketchFiles, f)
-			tim.Inc()
+			pt.Inc()
 			return nil
 		})
-	tim.Done()
+	pt.Done()
 
 	fmt.Fprintln(os.Stderr, "Loading sketches")
-	tim = common.NewTimerMessasge("loading")
+	pt = ptimer.New()
 	sketches, err := loadSketches(sketchFiles)
 	common.ExitIfError(err)
-	tim.Done()
+	pt.Done()
 
 	fmt.Fprintln(os.Stderr, "Building tree")
-	tim = common.NewTimerMessasge("tree building")
+	pt = ptimer.New()
 	tree := makeTree(sketches, baseNames(files))
-	tim.Done()
+	pt.Done()
 
 	treeText, _ := tree.MarshalText()
 	if *fout == "" {
