@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"iter"
 	"math"
 	"os"
 	"runtime"
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/newick"
+	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/ppln/v2"
 )
 
@@ -210,7 +210,7 @@ func unifracDistWeighted(a, b []flatNode, treeDists []float64) float64 {
 func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
 	forEach func(float64) error) {
 	ppln.Serial(*nt,
-		iterPairs(nodes),
+		common.IterPairs(nodes),
 		func(a [2][]flatNode, _, _ int) (float64, error) {
 			aa := a
 			if weighted {
@@ -221,17 +221,4 @@ func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
 		}, func(a float64) error {
 			return forEach(a)
 		})
-}
-
-// Returns an iterator over pairs of elements in s.
-func iterPairs[T any](s []T) iter.Seq2[[2]T, error] {
-	return func(yield func([2]T, error) bool) {
-		for i := range s {
-			for j := range i {
-				if !yield([2]T{s[i], s[j]}, nil) {
-					return
-				}
-			}
-		}
-	}
 }

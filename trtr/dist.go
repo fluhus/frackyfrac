@@ -6,9 +6,11 @@ import (
 	"os"
 
 	"github.com/fluhus/biostuff/formats/newick"
+	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/clustering"
 	"github.com/fluhus/gostuff/gnum"
 	"github.com/fluhus/gostuff/minhash"
+	"github.com/fluhus/gostuff/ppln/v2"
 	"golang.org/x/exp/maps"
 )
 
@@ -41,11 +43,23 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 			len(sketches), len(names)))
 	}
 	var distances []float64
+	ppln.Serial[[2]*minhash.MinHash[uint64], float64](
+		*nt,
+		common.IterPairs(sketches),
+		func(a [2]*minhash.MinHash[uint64], i, g int) (float64, error) {
+			return jaccardToMash(a[0].Jaccard(a[1])), nil
+		},
+		func(a float64) error {
+			distances = append(distances, a)
+			return nil
+		},
+	)
 	hcl := clustering.Agglo(len(sketches), clustering.AggloAverage,
 		func(i, j int) float64 {
-			d := jaccardToMash(sketches[i].Jaccard(sketches[j]))
-			distances = append(distances, d)
-			return d
+			if i == j {
+				return 0
+			}
+			return distances[ijToN(i, j)]
 		})
 	fmt.Printf("Ditances: [%.2f,%.2f] mean=%.2f+-%.2f\n",
 		gnum.Min(distances), gnum.Max(distances), gnum.Mean(distances),
@@ -69,6 +83,18 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 	return nodes[len(nodes)-1].toNewickNode()
 }
 
+// Converts coordinates in the distance matrix to an index in the linear vector.
+func ijToN(i, j int) int {
+	if i == j {
+		panic(fmt.Sprintf("i=j is not allowed (i=j=%v)", i))
+	}
+	if i < j {
+		i, j = j, i
+	}
+	return i*(i-1)/2 + j
+}
+
+// Converts a Jaccard similarity score to Mash distance.
 func jaccardToMash(jac float64) float64 {
 	if jac == 0 {
 		return 1
