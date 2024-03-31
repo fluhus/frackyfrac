@@ -12,7 +12,7 @@ import (
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/fasta"
-	s2 "github.com/fluhus/biostuff/sequtil/v2"
+	"github.com/fluhus/biostuff/sequtil/v2"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/ppln"
 	"github.com/fluhus/gostuff/ptimer"
@@ -120,7 +120,7 @@ func iterKmers(file string, k int) iter.Seq2[[]byte, error] {
 				yield(nil, err)
 				return
 			}
-			for kmer := range s2.CanonicalSubsequences(fa.Sequence, k) {
+			for kmer := range sequtil.CanonicalSubsequences(fa.Sequence, k) {
 				if !yield(kmer, nil) {
 					return
 				}
