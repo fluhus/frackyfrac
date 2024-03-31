@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/fluhus/gostuff/aio"
 	"github.com/fluhus/gostuff/jio"
 	"github.com/fluhus/gostuff/minhash"
 	"github.com/spaolacci/murmur3"
@@ -9,24 +8,18 @@ import (
 
 // Creates a kmer sketch for the given fasta file.
 func sketchFile(fin, fout string) error {
-	f, err := aio.Open(fin)
-	if err != nil {
-		return err
-	}
 	mh := minhash.New[uint64](int(*n))
 	h := murmur3.New64()
-	err = (iterKmers(f, int(*k), func(kmer []byte) {
+	for kmer, err := range iterKmers(fin, int(*k)) {
+		if err != nil {
+			return err
+		}
 		h.Reset()
 		h.Write(kmer)
 		mh.Push(h.Sum64())
-	}))
-	f.Close()
-	if err != nil {
-		return err
 	}
 	mh.Sort()
-	err = jio.Save(fout, mh)
-	if err != nil {
+	if err := jio.Save(fout, mh); err != nil {
 		return err
 	}
 	return nil

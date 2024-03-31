@@ -6,15 +6,14 @@ import (
 	"encoding/base32"
 	"flag"
 	"fmt"
-	"io"
+	"iter"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/fasta"
-	"github.com/fluhus/biostuff/sequtil"
+	s2 "github.com/fluhus/biostuff/sequtil/v2"
 	"github.com/fluhus/frackyfrac/common"
-	"github.com/fluhus/gostuff/aio"
 	"github.com/fluhus/gostuff/ppln"
 	"github.com/fluhus/gostuff/ptimer"
 	"golang.org/x/exp/maps"
@@ -114,22 +113,20 @@ func expandFiles() []string {
 	return keys
 }
 
-// Calls f for each canonical kmer in the given reader.
-func iterKmers(r *aio.Reader, k int, f func([]byte)) error {
-	fqr := fasta.NewReader(r)
-	var err error
-	var fq *fasta.Fasta
-	for fq, err = fqr.Read(); err == nil; fq, err = fqr.Read() {
-		seq := fq.Sequence
-		sequtil.CanonicalSubsequences(seq, k, func(kmer []byte) bool {
-			f(kmer)
-			return true
-		})
+func iterKmers(file string, k int) iter.Seq2[[]byte, error] {
+	return func(yield func([]byte, error) bool) {
+		for fa, err := range fasta.IterFile(file) {
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			for kmer := range s2.CanonicalSubsequences(fa.Sequence, k) {
+				if !yield(kmer, nil) {
+					return
+				}
+			}
+		}
 	}
-	if err != io.EOF {
-		return err
-	}
-	return nil
 }
 
 // A convenience function for hashing strings.
