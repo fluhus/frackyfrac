@@ -28,7 +28,7 @@ var (
 
 func main() {
 	common.ExitIfError(parseArgs())
-	debug.SetGCPercent(33) // Make the garbage collector more eager.
+	debug.SetGCPercent(20) // Make the garbage collector more eager.
 
 	t := time.Now()
 	fmt.Fprintln(os.Stderr, "Reading tree")
@@ -55,10 +55,12 @@ func main() {
 
 	w, err := openOutput()
 	common.ExitIfError(err)
-	unifrac(abnd, tree, *wgt, func(f float64) error {
-		_, err := fmt.Fprintln(w, f)
-		return err
-	})
+	for f := range unifrac(abnd, tree, *wgt) {
+		if _, err = fmt.Fprintln(w, f); err != nil {
+			break
+		}
+	}
+	common.ExitIfError(err)
 	w.Close()
 	fmt.Fprintln(os.Stderr, "Took", time.Since(t))
 	fmt.Fprintln(os.Stderr, "Done")

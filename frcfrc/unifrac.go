@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"os"
 	"runtime"
@@ -94,7 +95,7 @@ func validateSpecies(abnd []map[string]float64, tree *newick.Node) error {
 // Returns the unifrac distances between the given abundances, in flat pyramid
 // order.
 func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
-	forEach func(float64) error) {
+) iter.Seq[float64] {
 	sets := make([][]flatNode, 0, len(abnd))
 	enum := enumerateNodes(tree)
 	fmt.Fprintln(os.Stderr, "Converting abundances")
@@ -119,7 +120,7 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 	}
 	runtime.GC()
 	fmt.Fprintln(os.Stderr, "Calculating distances")
-	unifracDists(sets, treeDists, weighted, forEach)
+	return unifracDists(sets, treeDists, weighted)
 }
 
 // Assigns an arbitrary unique number to each node in the tree.
@@ -206,17 +207,22 @@ func unifracDistWeighted(a, b []flatNode, treeDists []float64) float64 {
 // Returns the UniFrac distances between the given samples, in flat pyramid
 // order.
 func unifracDists(nodes [][]flatNode, treeDists []float64, weighted bool,
-	forEach func(float64) error) {
-	ppln.Serial(*nt,
-		common.IterPairs(nodes),
-		func(a [2][]flatNode, _, _ int) (float64, error) {
-			aa := a
-			if weighted {
-				return unifracDistWeighted(aa[0], aa[1], treeDists), nil
-			} else {
-				return unifracDistUnweighted(aa[0], aa[1], treeDists), nil
-			}
-		}, func(a float64) error {
-			return forEach(a)
-		})
+) iter.Seq[float64] {
+	return func(yield func(float64) bool) {
+		ppln.Serial(*nt,
+			common.IterPairs(nodes),
+			func(a [2][]flatNode, _, _ int) (float64, error) {
+				aa := a
+				if weighted {
+					return unifracDistWeighted(aa[0], aa[1], treeDists), nil
+				} else {
+					return unifracDistUnweighted(aa[0], aa[1], treeDists), nil
+				}
+			}, func(a float64) error {
+				if !yield(a) {
+					return fmt.Errorf("")
+				}
+				return nil
+			})
+	}
 }
