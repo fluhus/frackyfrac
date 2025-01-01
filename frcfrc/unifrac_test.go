@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,7 +11,7 @@ import (
 
 func TestUniFrac_simple(t *testing.T) {
 	treeText := "(s2:3,s1:1,s3:5);"
-	tree, err := newick.NewReader(strings.NewReader(treeText)).Read()
+	tree, err := parseTree(treeText)
 	if err != nil {
 		t.Fatal("failed to parse tree:", err)
 	}
@@ -32,7 +33,7 @@ func TestUniFrac_simple(t *testing.T) {
 
 func TestUniFrac_complex(t *testing.T) {
 	treeText := "((s1:1,s2:3,s3:5):3,(s4:2,s5:2,s6:2):4,(s7:3,s8:2,s9:1):5);"
-	tree, err := newick.NewReader(strings.NewReader(treeText)).Read()
+	tree, err := parseTree(treeText)
 	if err != nil {
 		t.Fatal("failed to parse tree:", err)
 	}
@@ -55,7 +56,7 @@ func TestUniFrac_complex(t *testing.T) {
 
 func TestUniFrac_weighted(t *testing.T) {
 	treeText := "((s1:1,s2:3):2,(s3:2,s4:5):1);"
-	tree, err := newick.NewReader(strings.NewReader(treeText)).Read()
+	tree, err := parseTree(treeText)
 	if err != nil {
 		t.Fatal("failed to parse tree:", err)
 	}
@@ -73,4 +74,11 @@ func TestUniFrac_weighted(t *testing.T) {
 		t.Fatalf("unifrac(%v, %q, true)=%v, want %v",
 			abnd, treeText, got, want)
 	}
+}
+
+func parseTree(s string) (*newick.Node, error) {
+	for tr, err := range newick.Reader(strings.NewReader(s)) {
+		return tr, err
+	}
+	return nil, fmt.Errorf("no tree provided")
 }

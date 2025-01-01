@@ -10,7 +10,7 @@ import (
 	"github.com/fluhus/gostuff/clustering"
 	"github.com/fluhus/gostuff/gnum"
 	"github.com/fluhus/gostuff/minhash"
-	"github.com/fluhus/gostuff/ppln/v2"
+	"github.com/fluhus/gostuff/ppln"
 	"golang.org/x/exp/maps"
 )
 

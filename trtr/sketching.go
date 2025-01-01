@@ -19,7 +19,7 @@ func sketchFile(fin, fout string) error {
 		mh.Push(h.Sum64())
 	}
 	mh.Sort()
-	if err := jio.Save(fout, mh); err != nil {
+	if err := jio.Write(fout, mh); err != nil {
 		return err
 	}
 	return nil
@@ -30,7 +30,7 @@ func loadSketches(files []string) ([]*minhash.MinHash[uint64], error) {
 	result := make([]*minhash.MinHash[uint64], 0, len(files))
 	for _, file := range files {
 		x := minhash.New[uint64](1)
-		err := jio.Load(file, &x)
+		err := jio.Read(file, &x)
 		if err != nil {
 			return nil, err
 		}

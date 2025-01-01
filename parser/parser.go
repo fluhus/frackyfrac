@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/fluhus/gostuff/ppln/v2"
+	"github.com/fluhus/gostuff/ppln"
 )
 
 // Splits input rows into individual values.

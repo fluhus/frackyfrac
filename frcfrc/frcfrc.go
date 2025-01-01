@@ -105,12 +105,10 @@ func openOutput() (io.WriteCloser, error) {
 
 // Reads the tree from the path in the argument.
 func readTree() (*newick.Node, error) {
-	f, err := aio.Open(*ftree)
-	if err != nil {
-		return nil, err
+	for t, err := range newick.File(*ftree) {
+		return t, err
 	}
-	defer f.Close()
-	return newick.NewReader(f).Read()
+	return nil, fmt.Errorf("no tree in the given file")
 }
 
 // Prints usage help message.

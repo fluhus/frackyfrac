@@ -9,7 +9,7 @@ import (
 
 	"github.com/fluhus/biostuff/formats/newick"
 	"github.com/fluhus/frackyfrac/common"
-	"github.com/fluhus/gostuff/ppln/v2"
+	"github.com/fluhus/gostuff/ppln"
 )
 
 const (
@@ -68,10 +68,9 @@ func normalizeFlatNodes(nodes []flatNode) {
 // Returns all the unique names in the tree.
 func treeNames(tree *newick.Node) map[string]struct{} {
 	m := map[string]struct{}{}
-	tree.PreOrder(func(n *newick.Node) bool {
+	for n := range tree.PreOrder() {
 		m[n.Name] = struct{}{}
-		return true
-	})
+	}
 	return m
 }
 
@@ -126,10 +125,9 @@ func unifrac(abnd []map[string]float64, tree *newick.Node, weighted bool,
 // Assigns an arbitrary unique number to each node in the tree.
 func enumerateNodes(tree *newick.Node) map[*newick.Node]int {
 	m := map[*newick.Node]int{}
-	tree.PreOrder(func(n *newick.Node) bool {
+	for n := range tree.PreOrder() {
 		m[n] = len(m)
-		return true
-	})
+	}
 	return m
 }
 

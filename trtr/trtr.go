@@ -12,7 +12,7 @@ import (
 	"sort"
 
 	"github.com/fluhus/biostuff/formats/fasta"
-	"github.com/fluhus/biostuff/sequtil/v2"
+	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/ppln"
 	"github.com/fluhus/gostuff/ptimer"
@@ -45,13 +45,14 @@ func main() {
 
 	pt := ptimer.NewMessage("{} files sketched")
 	var sketchFiles []string
-	ppln.Serial(
+	ppln.Serial[string, string](
 		*nt,
-		func(push func(string), stop func() bool) error {
+		func(yield func(string, error) bool) {
 			for _, file := range files {
-				push(file)
+				if !yield(file, nil) {
+					break
+				}
 			}
-			return nil
 		},
 		func(file string, i, g int) (string, error) {
 			fout := filepath.Join(tmp, "sketch_"+strhash(file)+".json.gz")
@@ -115,7 +116,7 @@ func expandFiles() []string {
 
 func iterKmers(file string, k int) iter.Seq2[[]byte, error] {
 	return func(yield func([]byte, error) bool) {
-		for fa, err := range fasta.IterFile(file) {
+		for fa, err := range fasta.File(file) {
 			if err != nil {
 				yield(nil, err)
 				return
