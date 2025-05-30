@@ -1,12 +1,14 @@
 module github.com/fluhus/frackyfrac
 
-go 1.23
+go 1.24
 
 require (
-	github.com/fluhus/biostuff v1.0.0
-	github.com/fluhus/gostuff v1.0.1
-	github.com/spaolacci/murmur3 v1.1.0
-	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
+	github.com/fluhus/biostuff v1.2.1-0.20250530221512-3d864f1a8120
+	github.com/fluhus/gostuff v1.1.0
+	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7
 )
 
-require github.com/klauspost/compress v1.17.9 // indirect
+require (
+	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
+)

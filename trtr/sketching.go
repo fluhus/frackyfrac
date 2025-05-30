@@ -1,24 +1,14 @@
 package main
 
 import (
+	"github.com/fluhus/biostuff/formats/fasta"
+	"github.com/fluhus/biostuff/mash/v2"
 	"github.com/fluhus/gostuff/jio"
-	"github.com/fluhus/gostuff/minhash"
-	"github.com/spaolacci/murmur3"
 )
 
 // Creates a kmer sketch for the given fasta file.
-func sketchFile(fin, fout string) error {
-	mh := minhash.New[uint64](int(*n))
-	h := murmur3.New64()
-	for kmer, err := range iterKmers(fin, int(*k)) {
-		if err != nil {
-			return err
-		}
-		h.Reset()
-		h.Write(kmer)
-		mh.Push(h.Sum64())
-	}
-	mh.Sort()
+func sketchFile(fas []*fasta.Fasta, fout string) error {
+	mh := mash.New(int(*n), int(*k)).AddSeq(iterSeqs(fas))
 	if err := jio.Write(fout, mh); err != nil {
 		return err
 	}
@@ -26,10 +16,10 @@ func sketchFile(fin, fout string) error {
 }
 
 // Loads the sketches saved in the given file list.
-func loadSketches(files []string) ([]*minhash.MinHash[uint64], error) {
-	result := make([]*minhash.MinHash[uint64], 0, len(files))
+func loadSketches(files []string) ([]*mash.Masher, error) {
+	result := make([]*mash.Masher, 0, len(files))
 	for _, file := range files {
-		x := minhash.New[uint64](1)
+		x := &mash.Masher{}
 		err := jio.Read(file, &x)
 		if err != nil {
 			return nil, err

@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/fluhus/biostuff/formats/newick"
+	"github.com/fluhus/biostuff/mash/v2"
 	"github.com/fluhus/frackyfrac/common"
 	"github.com/fluhus/gostuff/clustering"
 	"github.com/fluhus/gostuff/gnum"
-	"github.com/fluhus/gostuff/minhash"
 	"github.com/fluhus/gostuff/ppln"
 	"golang.org/x/exp/maps"
 )
@@ -37,17 +37,17 @@ type deepNode struct {
 }
 
 // Creates a tree from the given sketches with names as the leaf names.
-func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node {
+func makeTree(sketches []*mash.Masher, names []string) *newick.Node {
 	if len(sketches) != len(names) {
 		panic(fmt.Sprintf("mismatching lengths: %d, %d",
 			len(sketches), len(names)))
 	}
 	var distances []float64
-	ppln.Serial[[2]*minhash.MinHash[uint64], float64](
+	ppln.Serial[[2]*mash.Masher, float64](
 		*nt,
 		common.IterPairs(sketches),
-		func(a [2]*minhash.MinHash[uint64], i, g int) (float64, error) {
-			return jaccardToMash(a[0].Jaccard(a[1])), nil
+		func(a [2]*mash.Masher, i, g int) (float64, error) {
+			return a[0].Distance(a[1]), nil
 		},
 		func(a float64) error {
 			distances = append(distances, a)
@@ -71,7 +71,7 @@ func makeTree(sketches []*minhash.MinHash[uint64], names []string) *newick.Node 
 	for _, name := range names {
 		nodes = append(nodes, &deepNode{name: name})
 	}
-	for i := 0; i < hcl.Len(); i++ {
+	for i := range hcl.Len() {
 		step := hcl.Step(i)
 		node1, node2 := nodes[step.C1], nodes[step.C2]
 		depth := step.D / 2 // Divided by the 2 children.
@@ -92,14 +92,6 @@ func ijToN(i, j int) int {
 		i, j = j, i
 	}
 	return i*(i-1)/2 + j
-}
-
-// Converts a Jaccard similarity score to Mash distance.
-func jaccardToMash(jac float64) float64 {
-	if jac == 0 {
-		return 1
-	}
-	return min(-math.Log(2*jac/(1+jac))/float64(*k), 1)
 }
 
 // Converts a node with depth to a node with distance.
